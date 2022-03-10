@@ -4,19 +4,21 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 )
 
 type AWSSSM struct {
-	session aws.Config
-	SSM     *ssm.Client
+	//awsSession aws.Config
+	SSM *ssm.Client
 }
 
-func NewSSM() *AWSSSM {
+func NewSSM(profile string, region string) *AWSSSM {
 	// initialize aws session using config files
-	awsSession, err := config.LoadDefaultConfig(context.TODO())
+	awsSession, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithSharedConfigProfile(profile),
+		config.WithRegion(region),
+	)
 
 	if err != nil {
 		panic(fmt.Sprintf("failed loading config, %v", err))
@@ -24,14 +26,8 @@ func NewSSM() *AWSSSM {
 
 	ssmClient := ssm.NewFromConfig(awsSession)
 
-	//	session.Handlers.Send.PushFront(func(r *request.Request) {
-	//		// Log every request made and its payload
-	//		fmt.Printf("Request: %s/%s, Params: %s",
-	//			r.ClientInfo.ServiceName, r.Operation, r.Params)
-	//	})
-
 	return &AWSSSM{
-		session: awsSession,
-		SSM:     ssmClient,
+		//awsSession: awsSession,
+		SSM: ssmClient,
 	}
 }

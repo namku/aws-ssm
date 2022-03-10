@@ -26,7 +26,11 @@ This application is a tool to generate the needed files
 
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ssmClient := pkg.NewSSM()
+		// flags for custom aws config
+		profile, _ := cmd.Flags().GetString("profile")
+		region, _ := cmd.Flags().GetString("region")
+
+		ssmClient := pkg.NewSSM(profile, region)
 		results, err := ssmClient.SSM.GetParameters(context.TODO(), &ssm.GetParametersInput{
 			Names: args,
 		})
@@ -43,6 +47,9 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
+	getCmd.PersistentFlags().String("profile", "default", "AWS configuration profile")
+	getCmd.PersistentFlags().String("region", "", "AWS configuration profile")
+
 	rootCmd.AddCommand(getCmd)
 
 	// Here you will define your flags and configuration settings.
