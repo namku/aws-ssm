@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/namku/aws-ssm/pkg"
@@ -30,9 +31,25 @@ to quickly create a Cobra application.`,
 		profile, _ := cmd.Flags().GetString("profile")
 		region, _ := cmd.Flags().GetString("region")
 
-		ssmClient := pkg.NewSSM(profile, region)
-		results, err := ssmClient.SSM.GetParameters(context.TODO(), &ssm.GetParametersInput{
-			Names: args,
+		bypath, _ := cmd.Flags().GetStringArray("bypath")
+		param, _ := cmd.Flags().GetStringArray("param")
+
+		fmt.Println(bypath)
+		if bypath != nil {
+			getParameterByPath(bypath, profile, region)
+		}
+		if param != nil {
+			getParameters(param, profile, region)
+		}
+	},
+}
+
+func getParameterByPath(params []string, profile string, region string) {
+	ssmClient := pkg.NewSSM(profile, region)
+
+	for k, _ := range params {
+		results, err := ssmClient.SSM.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
+			Path: &params[k],
 		})
 		if err != nil {
 			fmt.Println(err.Error())
@@ -41,14 +58,39 @@ to quickly create a Cobra application.`,
 		}
 
 		for _, n := range results.Parameters {
-			fmt.Println(*n.Value)
+			envVar := strings.Split(*n.Name, "/")
+			envVarLast := len(envVar)
+			fmt.Println(envVar[envVarLast-1] + "=" + *n.Value)
 		}
-	},
+	}
+
+}
+
+func getParameters(params []string, profile string, region string) {
+	ssmClient := pkg.NewSSM(profile, region)
+
+	results, err := ssmClient.SSM.GetParameters(context.TODO(), &ssm.GetParametersInput{
+		Names: params,
+	})
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+		return
+	}
+
+	for _, n := range results.Parameters {
+		envVar := strings.Split(*n.Name, "/")
+		envVarLast := len(envVar)
+		fmt.Println(envVar[envVarLast-1] + "=" + *n.Value)
+	}
 }
 
 func init() {
-	getCmd.PersistentFlags().String("profile", "default", "AWS configuration profile")
-	getCmd.PersistentFlags().String("region", "", "AWS configuration profile")
+	getCmd.Flags().StringP("profile", "P", "default", "AWS configuration profile")
+	getCmd.Flags().StringP("region", "R", "", "AWS configuration region")
+
+	getCmd.Flags().StringArrayP("bypath", "b", nil, "Search query by path")
+	getCmd.Flags().StringArrayP("param", "p", nil, "Search query by param")
 
 	rootCmd.AddCommand(getCmd)
 
