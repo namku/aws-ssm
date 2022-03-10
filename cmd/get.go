@@ -34,7 +34,6 @@ to quickly create a Cobra application.`,
 		bypath, _ := cmd.Flags().GetStringArray("bypath")
 		param, _ := cmd.Flags().GetStringArray("param")
 
-		fmt.Println(bypath)
 		if bypath != nil {
 			getParameterByPath(bypath, profile, region)
 		}
