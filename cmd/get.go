@@ -29,15 +29,7 @@ to quickly create a Cobra application.`,
 		ssmClient := pkg.NewSSM()
 		results, err := ssmClient.SSM.GetParameters(context.TODO(), &ssm.GetParametersInput{
 			Names: args,
-			//Name: &args[0],
 		})
-
-		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-			return
-		}
-
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
