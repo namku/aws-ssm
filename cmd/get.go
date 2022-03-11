@@ -6,11 +6,11 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/mitchellh/colorstring"
 	"github.com/namku/aws-ssm/cmd/dialog"
 	"github.com/namku/aws-ssm/pkg"
 	"github.com/spf13/cobra"
@@ -35,11 +35,11 @@ to quickly create a Cobra application.`,
 		bypath, _ := cmd.Flags().GetStringArray("bypath")
 		param, _ := cmd.Flags().GetStringArray("param")
 
-		if bypath != nil {
+		if len(bypath) > 0 {
 			getParameterByPath(bypath, profile, region, cmd)
 		}
-		if param != nil {
-			getParameters(param, profile, region)
+		if len(param) > 0 {
+			getParameters(param, profile, region, cmd)
 		}
 	},
 }
@@ -52,7 +52,6 @@ func getParameterByPath(params []string, profile string, region string, cmd *cob
 			Path: &params[k],
 		})
 		if err != nil {
-			//fmt.Println(err.Error())
 			dialog.Log("Error", err.Error(), cmd)
 			os.Exit(1)
 			return
@@ -61,20 +60,20 @@ func getParameterByPath(params []string, profile string, region string, cmd *cob
 		for _, n := range results.Parameters {
 			envVar := strings.Split(*n.Name, "/")
 			envVarLast := len(envVar)
-			fmt.Println(envVar[envVarLast-1] + "=" + *n.Value)
+			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
 		}
 	}
 
 }
 
-func getParameters(params []string, profile string, region string) {
+func getParameters(params []string, profile string, region string, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	results, err := ssmClient.SSM.GetParameters(context.TODO(), &ssm.GetParametersInput{
 		Names: params,
 	})
 	if err != nil {
-		fmt.Println(err.Error())
+		dialog.Log("Error", err.Error(), cmd)
 		os.Exit(1)
 		return
 	}
@@ -82,7 +81,7 @@ func getParameters(params []string, profile string, region string) {
 	for _, n := range results.Parameters {
 		envVar := strings.Split(*n.Name, "/")
 		envVarLast := len(envVar)
-		fmt.Println(envVar[envVarLast-1] + "=" + *n.Value)
+		colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
 	}
 }
 
