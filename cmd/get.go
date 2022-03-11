@@ -34,10 +34,11 @@ According to the search it can take a long time.`,
 		region, _ := cmd.Flags().GetString("region")
 
 		bypath, _ := cmd.Flags().GetStringArray("bypath")
+		fullPath, _ := cmd.Flags().GetBool("fullPath")
 		param, _ := cmd.Flags().GetStringArray("param")
 
 		if len(bypath) > 0 {
-			getParametersByPath(bypath, profile, region, cmd)
+			getParametersByPath(bypath, profile, region, fullPath, cmd)
 		}
 		if len(param) > 0 {
 			getParameters(param, profile, region, cmd)
@@ -49,7 +50,7 @@ According to the search it can take a long time.`,
 }
 
 // getParamtersByPath retrive values from path without param.
-func getParametersByPath(params []string, profile string, region string, cmd *cobra.Command) {
+func getParametersByPath(params []string, profile string, region string, fullPath bool, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	for k, _ := range params {
@@ -64,33 +65,46 @@ func getParametersByPath(params []string, profile string, region string, cmd *co
 		}
 
 		for _, n := range results.Parameters {
-			//envVar := strings.Split(*n.Name, "/")
-			//envVarLast := len(envVar)
-			//colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			if fullPath == false {
+				envVar := strings.Split(*n.Name, "/")
+				envVarLast := len(envVar)
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			} else {
+				colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			}
 		}
 
 		if results.NextToken != nil {
-			nextToken := *results.NextToken
+			getParametersByPathNextToken(params, profile, region, fullPath, results, cmd)
+		}
+	}
+}
 
-			for k, _ := range params {
-				results, err := ssmClient.SSM.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-					Path:      &params[k],
-					Recursive: true,
-					NextToken: &nextToken,
-				})
-				if err != nil {
-					dialog.Log("Error", err.Error(), cmd)
-					os.Exit(1)
-					return
-				}
+// getParamtersByPathNexToken retrive values from path without param from the token.
+func getParametersByPathNextToken(params []string, profile string, region string, fullPath bool, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(profile, region)
 
-				for _, n := range results.Parameters {
-					//envVar := strings.Split(*n.Name, "/")
-					//envVarLast := len(envVar)
-					//colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-					colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
-				}
+	nextToken := *results.NextToken
+
+	for k, _ := range params {
+		results, err := ssmClient.SSM.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
+			Path:      &params[k],
+			Recursive: true,
+			NextToken: &nextToken,
+		})
+		if err != nil {
+			dialog.Log("Error", err.Error(), cmd)
+			os.Exit(1)
+			return
+		}
+
+		for _, n := range results.Parameters {
+			if fullPath == false {
+				envVar := strings.Split(*n.Name, "/")
+				envVarLast := len(envVar)
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			} else {
+				colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
 			}
 		}
 	}
@@ -121,6 +135,7 @@ func init() {
 	getCmd.Flags().StringP("region", "R", "", "AWS configuration region")
 
 	getCmd.Flags().StringArrayP("bypath", "b", nil, "Search query by path")
+	getCmd.Flags().BoolP("fullPath", "f", false, "Output with full path param")
 	getCmd.Flags().StringArrayP("param", "p", nil, "Search query by param")
 
 	rootCmd.AddCommand(getCmd)
