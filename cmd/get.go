@@ -37,7 +37,7 @@ According to the search it can take a long time.`,
 		param, _ := cmd.Flags().GetStringArray("param")
 
 		if len(bypath) > 0 {
-			getParameterByPath(bypath, profile, region, cmd)
+			getParametersByPath(bypath, profile, region, cmd)
 		}
 		if len(param) > 0 {
 			getParameters(param, profile, region, cmd)
@@ -48,7 +48,8 @@ According to the search it can take a long time.`,
 	},
 }
 
-func getParameterByPath(params []string, profile string, region string, cmd *cobra.Command) {
+// getParamtersByPath retrive values from path without param.
+func getParametersByPath(params []string, profile string, region string, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	for k, _ := range params {
@@ -70,6 +71,7 @@ func getParameterByPath(params []string, profile string, region string, cmd *cob
 
 }
 
+// getParameters retrives values from path with param.
 func getParameters(params []string, profile string, region string, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
