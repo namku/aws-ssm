@@ -54,7 +54,8 @@ func getParametersByPath(params []string, profile string, region string, cmd *co
 
 	for k, _ := range params {
 		results, err := ssmClient.SSM.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-			Path: &params[k],
+			Path:      &params[k],
+			Recursive: true,
 		})
 		if err != nil {
 			dialog.Log("Error", err.Error(), cmd)
@@ -63,12 +64,36 @@ func getParametersByPath(params []string, profile string, region string, cmd *co
 		}
 
 		for _, n := range results.Parameters {
-			envVar := strings.Split(*n.Name, "/")
-			envVarLast := len(envVar)
-			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			//envVar := strings.Split(*n.Name, "/")
+			//envVarLast := len(envVar)
+			//colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+		}
+
+		if results.NextToken != nil {
+			nextToken := *results.NextToken
+
+			for k, _ := range params {
+				results, err := ssmClient.SSM.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
+					Path:      &params[k],
+					Recursive: true,
+					NextToken: &nextToken,
+				})
+				if err != nil {
+					dialog.Log("Error", err.Error(), cmd)
+					os.Exit(1)
+					return
+				}
+
+				for _, n := range results.Parameters {
+					//envVar := strings.Split(*n.Name, "/")
+					//envVarLast := len(envVar)
+					//colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+					colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+				}
+			}
 		}
 	}
-
 }
 
 // getParameters retrives values from path with param.
