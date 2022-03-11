@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/namku/aws-ssm/cmd/dialog"
 	"github.com/namku/aws-ssm/pkg"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +36,7 @@ to quickly create a Cobra application.`,
 		param, _ := cmd.Flags().GetStringArray("param")
 
 		if bypath != nil {
-			getParameterByPath(bypath, profile, region)
+			getParameterByPath(bypath, profile, region, cmd)
 		}
 		if param != nil {
 			getParameters(param, profile, region)
@@ -43,7 +44,7 @@ to quickly create a Cobra application.`,
 	},
 }
 
-func getParameterByPath(params []string, profile string, region string) {
+func getParameterByPath(params []string, profile string, region string, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	for k, _ := range params {
@@ -51,7 +52,8 @@ func getParameterByPath(params []string, profile string, region string) {
 			Path: &params[k],
 		})
 		if err != nil {
-			fmt.Println(err.Error())
+			//fmt.Println(err.Error())
+			dialog.Log("Error", err.Error(), cmd)
 			os.Exit(1)
 			return
 		}
