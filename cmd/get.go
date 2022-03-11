@@ -19,14 +19,15 @@ import (
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "The aws-ssm get command gets parameter values from SSM.",
+	Long: `Usage: aws-ssm get [args]
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
+The aws-ssm get command, gets parameter values from SSM. Different
+flags can be agreed to obtain more extensive searches. For example:
 
-to quickly create a Cobra application.`,
+aws-ssm get -p /vars/envs1/param1 -p /vars/envs2/param1 -b /vars/envs3
+
+According to the search it can take a long time.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// flags for custom aws config
 		profile, _ := cmd.Flags().GetString("profile")
@@ -40,6 +41,9 @@ to quickly create a Cobra application.`,
 		}
 		if len(param) > 0 {
 			getParameters(param, profile, region, cmd)
+		}
+		if len(bypath) == 0 && len(param) == 0 {
+			cmd.Help()
 		}
 	},
 }
