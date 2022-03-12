@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -72,9 +71,8 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 			return
 		}
 
-		for k, n := range results.Parameters {
+		for _, n := range results.Parameters {
 			if fullPath == false {
-				fmt.Println(k)
 				envVar := strings.Split(*n.Name, "/")
 				envVarLast := len(envVar)
 				if value != "" {
@@ -127,9 +125,8 @@ func getParametersByPathNextToken(params []string, profile string, region string
 			return
 		}
 
-		for k, n := range results.Parameters {
+		for _, n := range results.Parameters {
 			if fullPath == false {
-				fmt.Println(k)
 				envVar := strings.Split(*n.Name, "/")
 				envVarLast := len(envVar)
 				if value != "" {
