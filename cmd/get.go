@@ -50,7 +50,7 @@ According to the search it can take a long time.`,
 			getParametersByPath(bypath, profile, region, fullPath, parameter, value, cmd)
 		}
 		if len(param) > 0 {
-			getParameters(param, profile, region, cmd)
+			getParameters(param, profile, region, fullPath, cmd)
 		}
 		if len(bypath) == 0 && len(param) == 0 {
 			cmd.Help()
@@ -79,7 +79,7 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 			fmt.Printf("%T", n)
 			envVar = strings.Split(*n.Name, "/")
 			envVarLast = len(envVar)
-			searchByValueOrParam(value, envVar, envVarLast, parameter, n, fullPath)
+			parametersOutput(value, envVar, envVarLast, parameter, n, fullPath)
 		}
 
 		if results.NextToken != nil {
@@ -88,8 +88,8 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 	}
 }
 
-// searchByValue values or param query.
-func searchByValueOrParam(value string, envVar []string, envVarLast int, parameter string, n types.Parameter, fullPath bool) {
+// parametersOutput output with fullpath or without and search for value or param.
+func parametersOutput(value string, envVar []string, envVarLast int, parameter string, n types.Parameter, fullPath bool) {
 	if fullPath == false {
 		if value != "" {
 			if value == *n.Value {
@@ -169,7 +169,7 @@ func getParametersByPathNextToken(params []string, profile string, region string
 }
 
 // getParameters retrives values from path with param.
-func getParameters(params []string, profile string, region string, cmd *cobra.Command) {
+func getParameters(params []string, profile string, region string, fullPath bool, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	results, err := ssmClient.SSM.GetParameters(context.TODO(), &ssm.GetParametersInput{
@@ -184,7 +184,8 @@ func getParameters(params []string, profile string, region string, cmd *cobra.Co
 	for _, n := range results.Parameters {
 		envVar := strings.Split(*n.Name, "/")
 		envVarLast := len(envVar)
-		colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+		//colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+		parametersOutput("", envVar, envVarLast, "", n, fullPath)
 	}
 }
 
