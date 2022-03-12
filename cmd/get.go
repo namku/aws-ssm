@@ -6,10 +6,12 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/mitchellh/colorstring"
 	"github.com/namku/aws-ssm/cmd/dialog"
 	"github.com/namku/aws-ssm/pkg"
@@ -72,38 +74,50 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 		}
 
 		for _, n := range results.Parameters {
+			fmt.Printf("%T", n)
 			if fullPath == false {
 				envVar := strings.Split(*n.Name, "/")
 				envVarLast := len(envVar)
-				if value != "" {
-					if value == *n.Value {
-						colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-					}
-				} else if parameter != "" {
-					if parameter == *n.Name {
-						colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-					}
-				} else {
-					colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-				}
+				searchByValueOrParam(value, envVar, envVarLast, parameter, n)
 			} else {
-				if value != "" {
-					if value == *n.Value {
-						colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
-					}
-				} else if parameter != "" {
-					if parameter == *n.Name {
-						colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
-					}
-				} else {
-					colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
-				}
+				searchByValueOrParamFullPath(value, parameter, n)
 			}
 		}
 
 		if results.NextToken != nil {
 			getParametersByPathNextToken(params, profile, region, fullPath, parameter, value, results, cmd)
 		}
+	}
+}
+
+// searchByValue values or param query.
+func searchByValueOrParam(value string, envVar []string, envVarLast int, parameter string, n types.Parameter) {
+	if value != "" {
+		if value == *n.Value {
+			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+		}
+	} else if parameter != "" {
+		if parameter == *n.Name {
+			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+		}
+	} else {
+		colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+	}
+
+}
+
+// searchByParam value or param query, full path output.
+func searchByValueOrParamFullPath(value string, parameter string, n types.Parameter) {
+	if value != "" {
+		if value == *n.Value {
+			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+		}
+	} else if parameter != "" {
+		if parameter == *n.Name {
+			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+		}
+	} else {
+		colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
 	}
 }
 
