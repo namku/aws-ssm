@@ -44,10 +44,10 @@ According to the search it can take a long time.`,
 		if len(bypath) > 0 || value != "" || parameter != "" {
 			if value != "" || parameter != "" {
 				bypath = []string{"/"}
-				getParametersByPath(bypath, profile, region, fullPath, parameter, value, cmd)
 			} else {
-				getParametersByPath(bypath, profile, region, fullPath, parameter, value, cmd)
+				bypath = bypath
 			}
+			getParametersByPath(bypath, profile, region, fullPath, parameter, value, cmd)
 		}
 		if len(param) > 0 {
 			getParameters(param, profile, region, cmd)
@@ -73,15 +73,13 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 			return
 		}
 
+		var envVar []string
+		var envVarLast int
 		for _, n := range results.Parameters {
 			fmt.Printf("%T", n)
-			if fullPath == false {
-				envVar := strings.Split(*n.Name, "/")
-				envVarLast := len(envVar)
-				searchByValueOrParam(value, envVar, envVarLast, parameter, n)
-			} else {
-				searchByValueOrParamFullPath(value, parameter, n)
-			}
+			envVar = strings.Split(*n.Name, "/")
+			envVarLast = len(envVar)
+			searchByValueOrParam(value, envVar, envVarLast, parameter, n, fullPath)
 		}
 
 		if results.NextToken != nil {
@@ -91,34 +89,33 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 }
 
 // searchByValue values or param query.
-func searchByValueOrParam(value string, envVar []string, envVarLast int, parameter string, n types.Parameter) {
-	if value != "" {
-		if value == *n.Value {
-			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-		}
-	} else if parameter != "" {
-		if parameter == *n.Name {
+func searchByValueOrParam(value string, envVar []string, envVarLast int, parameter string, n types.Parameter, fullPath bool) {
+	if fullPath == false {
+		if value != "" {
+			if value == *n.Value {
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			}
+		} else if parameter != "" {
+			if parameter == *n.Name {
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			}
+		} else {
 			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
 		}
 	} else {
-		colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
-	}
-
-}
-
-// searchByParam value or param query, full path output.
-func searchByValueOrParamFullPath(value string, parameter string, n types.Parameter) {
-	if value != "" {
-		if value == *n.Value {
+		if value != "" {
+			if value == *n.Value {
+				colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			}
+		} else if parameter != "" {
+			if parameter == *n.Name {
+				colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			}
+		} else {
 			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
 		}
-	} else if parameter != "" {
-		if parameter == *n.Name {
-			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
-		}
-	} else {
-		colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
 	}
+
 }
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
