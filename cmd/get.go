@@ -145,7 +145,7 @@ func parametersOutput(value string, parameter string, v types.Parameter, fullPat
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 			}
 		} else if parameter != "" {
-			if parameter == *v.Name {
+			if parameter == envVar[envVarLast-1] {
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 			}
 		} else {
@@ -157,7 +157,7 @@ func parametersOutput(value string, parameter string, v types.Parameter, fullPat
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 			}
 		} else if parameter != "" {
-			if parameter == *v.Name {
+			if parameter == envVar[envVarLast-1] {
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 			}
 		} else {
