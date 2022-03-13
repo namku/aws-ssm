@@ -74,9 +74,7 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 		}
 
 		for _, n := range results.Parameters {
-			envVar := strings.Split(*n.Name, "/")
-			envVarLast := len(envVar)
-			parametersOutput(value, envVar, envVarLast, parameter, n, fullPath)
+			parametersOutput(value, parameter, n, fullPath)
 		}
 
 		if results.NextToken != nil {
@@ -103,11 +101,10 @@ func getParametersByPathNextToken(params []string, profile string, region string
 			return
 		}
 
-		for _, n := range results.Parameters {
-			envVar := strings.Split(*n.Name, "/")
-			envVarLast := len(envVar)
-			parametersOutput(value, envVar, envVarLast, parameter, n, fullPath)
+		for _, v := range results.Parameters {
+			parametersOutput(value, parameter, v, fullPath)
 		}
+
 		nextPage(params, profile, region, fullPath, parameter, value, results)
 	}
 }
@@ -131,40 +128,40 @@ func nextPage(params []string, profile string, region string, fullPath bool, par
 				log.Fatalf("failed to get page , %v", err)
 			}
 
-			for _, n := range results.Parameters {
-				envVar := strings.Split(*n.Name, "/")
-				envVarLast := len(envVar)
-				parametersOutput(value, envVar, envVarLast, parameter, n, fullPath)
+			for _, v := range results.Parameters {
+				parametersOutput(value, parameter, v, fullPath)
 			}
 		}
 	}
 }
 
 // parametersOutput output with fullpath or without and search for value or param.
-func parametersOutput(value string, envVar []string, envVarLast int, parameter string, n types.Parameter, fullPath bool) {
+func parametersOutput(value string, parameter string, v types.Parameter, fullPath bool) {
+	envVar := strings.Split(*v.Name, "/")
+	envVarLast := len(envVar)
 	if fullPath == false {
 		if value != "" {
-			if value == *n.Value {
-				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			if value == *v.Value {
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 			}
 		} else if parameter != "" {
-			if parameter == *n.Name {
-				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			if parameter == *v.Name {
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 			}
 		} else {
-			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *n.Value)
+			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 		}
 	} else {
 		if value != "" {
-			if value == *n.Value {
-				colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			if value == *v.Value {
+				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 			}
 		} else if parameter != "" {
-			if parameter == *n.Name {
-				colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			if parameter == *v.Name {
+				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 			}
 		} else {
-			colorstring.Println("[blue]" + *n.Name + "=[reset]" + *n.Value)
+			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 		}
 	}
 
@@ -183,10 +180,8 @@ func getParameters(params []string, profile string, region string, fullPath bool
 		return
 	}
 
-	for _, n := range results.Parameters {
-		envVar := strings.Split(*n.Name, "/")
-		envVarLast := len(envVar)
-		parametersOutput("", envVar, envVarLast, "", n, fullPath)
+	for _, v := range results.Parameters {
+		parametersOutput("", "", v, fullPath)
 	}
 }
 
