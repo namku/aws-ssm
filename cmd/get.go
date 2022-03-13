@@ -105,7 +105,9 @@ func getParametersByPathNextToken(params []string, profile string, region string
 			parametersOutput(value, parameter, v, fullPath)
 		}
 
-		nextPage(params, profile, region, fullPath, parameter, value, results)
+		if results.NextToken != nil {
+			nextPage(params, profile, region, fullPath, parameter, value, results)
+		}
 	}
 }
 
