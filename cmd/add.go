@@ -5,8 +5,12 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	"github.com/namku/aws-ssm/pkg"
 	"github.com/spf13/cobra"
 )
 
@@ -21,11 +25,53 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("add called")
+		// flags for custom aws config
+		profile, _ := cmd.Flags().GetString("profile")
+		region, _ := cmd.Flags().GetString("region")
+
+		name, _ := cmd.Flags().GetString("name")
+		value, _ := cmd.Flags().GetString("value")
+		description, _ := cmd.Flags().GetString("description")
+		typeVar, _ := cmd.Flags().GetString("type")
+
+		putParameter(profile, region, name, value, description, typeVar)
 	},
 }
 
+func putParameter(profile string, region string, name string, value string, description string, typeVar string) {
+	ssmClient := pkg.NewSSM(profile, region)
+
+	var typeValue types.ParameterType
+
+	switch typeVar {
+	case "string":
+		typeValue = "String"
+	case "stringList":
+		typeValue = "StringList"
+	case "secret":
+		typeValue = "SecureString"
+	default:
+		fmt.Println("Valid options for --type [ string, stringList, secret ]")
+	}
+
+	_, err := ssmClient.PutParameter(context.TODO(), &ssm.PutParameterInput{
+		Name:        &name,
+		Value:       &value,
+		Description: &description,
+		Type:        typeValue,
+	})
+
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
 func init() {
+	addCmd.Flags().StringP("name", "n", "", "Parameter name to add")
+	addCmd.Flags().StringP("value", "v", "", "Value of the parameter")
+	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
+	addCmd.Flags().StringP("type", "t", "", "Type of the value")
+
 	rootCmd.AddCommand(addCmd)
 
 	// Here you will define your flags and configuration settings.
