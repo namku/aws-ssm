@@ -57,6 +57,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
+	// Subcommands Flags
 	rootCmd.PersistentFlags().StringP("profile", "P", "default", "AWS configuration profile")
 	rootCmd.PersistentFlags().StringP("region", "R", "", "AWS configuration region")
 	//rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.aws-ssm.yaml)")

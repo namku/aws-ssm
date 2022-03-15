@@ -188,9 +188,6 @@ func getParameters(params []string, profile string, region string, fullPath bool
 }
 
 func init() {
-	//getCmd.Flags().StringP("profile", "P", "default", "AWS configuration profile")
-	//getCmd.Flags().StringP("region", "R", "", "AWS configuration region")
-
 	getCmd.Flags().StringArrayP("bypath", "b", nil, "Search query by path")
 	getCmd.Flags().StringP("parameter", "r", "", "Search parameter in all paths")
 	getCmd.Flags().StringP("value", "v", "", "Search value in all paths")
