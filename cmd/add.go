@@ -14,6 +14,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type flags struct {
+	profile     string
+	region      string
+	name        string
+	value       string
+	description string
+	typeVar     string
+	overwrite   bool
+}
+
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
@@ -35,17 +45,19 @@ to quickly create a Cobra application.`,
 		typeVar, _ := cmd.Flags().GetString("type")
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 
-		putParameter(profile, region, name, value, description, typeVar, overwrite)
+		f := flags{profile, region, name, value, description, typeVar, overwrite}
+
+		putParameter(f)
 	},
 }
 
-func putParameter(profile string, region string, name string, value string, description string, typeVar string, overwrite bool) {
-	ssmClient := pkg.NewSSM(profile, region)
+func putParameter(flags flags) {
+	ssmClient := pkg.NewSSM(flags.profile, flags.region)
 
 	var typeValue types.ParameterType
 
 	// Improve, string to types.ParameterType
-	switch typeVar {
+	switch flags.typeVar {
 	case "string":
 		typeValue = "String"
 	case "stringList":
@@ -57,11 +69,11 @@ func putParameter(profile string, region string, name string, value string, desc
 	}
 
 	_, err := ssmClient.PutParameter(context.TODO(), &ssm.PutParameterInput{
-		Name:        &name,
-		Value:       &value,
-		Description: &description,
+		Name:        &flags.name,
+		Value:       &flags.value,
+		Description: &flags.description,
 		Type:        typeValue,
-		Overwrite:   overwrite,
+		Overwrite:   flags.overwrite,
 	})
 
 	if err != nil {
