@@ -33,16 +33,18 @@ to quickly create a Cobra application.`,
 		value, _ := cmd.Flags().GetString("value")
 		description, _ := cmd.Flags().GetString("description")
 		typeVar, _ := cmd.Flags().GetString("type")
+		overwrite, _ := cmd.Flags().GetBool("overwrite")
 
-		putParameter(profile, region, name, value, description, typeVar)
+		putParameter(profile, region, name, value, description, typeVar, overwrite)
 	},
 }
 
-func putParameter(profile string, region string, name string, value string, description string, typeVar string) {
+func putParameter(profile string, region string, name string, value string, description string, typeVar string, overwrite bool) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	var typeValue types.ParameterType
 
+	// Improve, string to types.ParameterType
 	switch typeVar {
 	case "string":
 		typeValue = "String"
@@ -59,6 +61,7 @@ func putParameter(profile string, region string, name string, value string, desc
 		Value:       &value,
 		Description: &description,
 		Type:        typeValue,
+		Overwrite:   overwrite,
 	})
 
 	if err != nil {
@@ -71,6 +74,7 @@ func init() {
 	addCmd.Flags().StringP("value", "v", "", "Value of the parameter")
 	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
 	addCmd.Flags().StringP("type", "t", "", "Type of the value")
+	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
 
 	rootCmd.AddCommand(addCmd)
 
