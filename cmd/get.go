@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -81,7 +80,6 @@ According to the search it can take a long time.`,
 func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
-	//var res *string
 	for k, _ := range flag.bypath {
 		results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 			Path:      &flag.bypath[k],
@@ -97,20 +95,9 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 		}
 
-		//if res == nil {
-		//	res = results.NextToken
-		//	//	fmt.Println("adiooooooooooooooooooooooooooooooooooooooooos")
-		//} else {
-		//	//	fmt.Println("isaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
-		//	results.NextToken = res
-		//	//	fmt.Println(results.NextToken)
-		//}
-		//fmt.Println(*results.NextToken)
-		//if flag.bypath[k] == "/directj" {
-		//if (results.NextToken != nil || k < len(flag.bypath)-1) || (results.NextToken != nil && len(flag.bypath) == 1) {
-		//if results.NextToken != nil {
-		//	getParametersByPathNextToken(flag, results, cmd)
-		//}
+		if results.NextToken != nil {
+			getParametersByPathNextToken(flag, results, cmd)
+		}
 	}
 }
 
@@ -120,16 +107,12 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 
 	nextToken := *results.NextToken
 
-	fmt.Println(results.NextToken)
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 		Path:      &flag.bypath[0],
 		Recursive: true,
 		NextToken: &nextToken,
 	})
-	//fmt.Println(results.NextToken)
-	fmt.Println("Isaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
 	if err != nil {
-		//	fmt.Println(results.NextToken)
 		dialog.Log("Error", err.Error(), cmd)
 		os.Exit(1)
 		return
@@ -139,9 +122,9 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 	}
 
-	//if results.NextToken != nil {
-	//	nextPage(flag, results)
-	//}
+	if results.NextToken != nil {
+		nextPage(flag, results)
+	}
 }
 
 // nextPage paginator options for GetParametersByPath
@@ -166,8 +149,6 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 		}
 	}
-	fmt.Println("isaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaac")
-	fmt.Println(*results.NextToken)
 }
 
 // getParameters retrives values from path with param.
