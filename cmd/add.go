@@ -52,7 +52,8 @@ to quickly create a Cobra application.`,
 		content := pkg.ReadFile("envFile")
 		for _, v := range content {
 			s := strings.Split(v, "=")
-			fl := flags{profile, region, "/globals/dev/GITHUB_USERNAME", s[1], description, typeVar, overwrite}
+			//param := strings.TrimSpace(s[0])
+			fl := flags{profile, region, s[0], s[1], description, typeVar, overwrite}
 			fmt.Println(s[0])
 			fmt.Println(s[1])
 			putParameter(fl)
