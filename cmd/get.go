@@ -18,6 +18,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type flagsGet struct {
+	profile  string
+	region   string
+	param    []string // only needed for getParamters
+	fullPath bool
+}
+
+type flagsGetByPath struct {
+	flagsGet
+	bypath    []string
+	parameter string
+	value     string
+}
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -41,30 +55,34 @@ According to the search it can take a long time.`,
 		fullPath, _ := cmd.Flags().GetBool("fullPath")
 		param, _ := cmd.Flags().GetStringArray("param")
 
-		if len(bypath) > 0 || value != "" || parameter != "" {
-			if value != "" || parameter != "" {
-				bypath = []string{"/"}
+		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath}, bypath, parameter, value}
+		flags := flagsGet{profile, region, param, fullPath}
+
+		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
+			if flagsPath.value != "" || flagsPath.parameter != "" {
+				flagsPath.bypath = []string{"/"}
 			} else {
-				bypath = bypath
+				flagsPath.bypath = flagsPath.bypath
 			}
-			getParametersByPath(bypath, profile, region, fullPath, parameter, value, cmd)
+
+			getParametersByPath(flagsPath, cmd)
 		}
-		if len(param) > 0 {
-			getParameters(param, profile, region, fullPath, cmd)
+		if len(flags.param) > 0 {
+			getParameters(flags, cmd)
 		}
-		if len(bypath) == 0 && len(param) == 0 {
+		if len(flagsPath.bypath) == 0 && len(flags.param) == 0 {
 			cmd.Help()
 		}
 	},
 }
 
 // getParamtersByPath retrive values from path without param.
-func getParametersByPath(params []string, profile string, region string, fullPath bool, parameter string, value string, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(profile, region)
+func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
-	for k, _ := range params {
+	for k, _ := range flag.bypath {
 		results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-			Path:      &params[k],
+			Path:      &flag.bypath[k],
 			Recursive: true,
 		})
 		if err != nil {
@@ -73,108 +91,26 @@ func getParametersByPath(params []string, profile string, region string, fullPat
 			return
 		}
 
-		for _, n := range results.Parameters {
-			parametersOutput(value, parameter, n, fullPath)
+		for _, output := range results.Parameters {
+			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 		}
 
 		if results.NextToken != nil {
-			getParametersByPathNextToken(params, profile, region, fullPath, parameter, value, results, cmd)
+			getParametersByPathNextToken(flag, results, cmd)
 		}
 	}
 }
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
-func getParametersByPathNextToken(params []string, profile string, region string, fullPath bool, parameter string, value string, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(profile, region)
+func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
 	nextToken := *results.NextToken
 
-	for k, _ := range params {
-		results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-			Path:      &params[k],
-			Recursive: true,
-			NextToken: &nextToken,
-		})
-		if err != nil {
-			dialog.Log("Error", err.Error(), cmd)
-			os.Exit(1)
-			return
-		}
-
-		for _, v := range results.Parameters {
-			parametersOutput(value, parameter, v, fullPath)
-		}
-
-		if results.NextToken != nil {
-			nextPage(params, profile, region, fullPath, parameter, value, results)
-		}
-	}
-}
-
-// nextPage paginator options for GetParametersByPath
-func nextPage(params []string, profile string, region string, fullPath bool, parameter string, value string, results *ssm.GetParametersByPathOutput) {
-	ssmClient := pkg.NewSSM(profile, region)
-
-	nextToken := *results.NextToken
-
-	for k, _ := range params {
-		paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
-			Path:      &params[k],
-			Recursive: true,
-			NextToken: &nextToken,
-		})
-
-		for paginator.HasMorePages() {
-			results, err := paginator.NextPage(context.TODO())
-			if err != nil {
-				log.Fatalf("failed to get page , %v", err)
-			}
-
-			for _, v := range results.Parameters {
-				parametersOutput(value, parameter, v, fullPath)
-			}
-		}
-	}
-}
-
-// parametersOutput output with fullpath or without and search for value or param.
-func parametersOutput(value string, parameter string, v types.Parameter, fullPath bool) {
-	envVar := strings.Split(*v.Name, "/")
-	envVarLast := len(envVar)
-	if fullPath == false {
-		if value != "" {
-			if value == *v.Value {
-				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
-			}
-		} else if parameter != "" {
-			if parameter == envVar[envVarLast-1] {
-				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
-			}
-		} else {
-			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
-		}
-	} else {
-		if value != "" {
-			if value == *v.Value {
-				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
-			}
-		} else if parameter != "" {
-			if parameter == envVar[envVarLast-1] {
-				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
-			}
-		} else {
-			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
-		}
-	}
-
-}
-
-// getParameters retrives values from path with param.
-func getParameters(params []string, profile string, region string, fullPath bool, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(profile, region)
-
-	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
-		Names: params,
+	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
+		Path:      &flag.bypath[0],
+		Recursive: true,
+		NextToken: &nextToken,
 	})
 	if err != nil {
 		dialog.Log("Error", err.Error(), cmd)
@@ -182,9 +118,88 @@ func getParameters(params []string, profile string, region string, fullPath bool
 		return
 	}
 
-	for _, v := range results.Parameters {
-		parametersOutput("", "", v, fullPath)
+	for _, output := range results.Parameters {
+		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 	}
+
+	if results.NextToken != nil {
+		nextPage(flag, results)
+	}
+}
+
+// nextPage paginator options for GetParametersByPath
+func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
+	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+
+	nextToken := *results.NextToken
+
+	paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
+		Path:      &flag.bypath[0],
+		Recursive: true,
+		NextToken: &nextToken,
+	})
+
+	for paginator.HasMorePages() {
+		results, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			log.Fatalf("failed to get page , %v", err)
+		}
+
+		for _, output := range results.Parameters {
+			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
+		}
+	}
+}
+
+// getParameters retrives values from path with param.
+func getParameters(flags flagsGet, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(flags.profile, flags.region)
+
+	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
+		Names: flags.param,
+	})
+	if err != nil {
+		dialog.Log("Error", err.Error(), cmd)
+		os.Exit(1)
+		return
+	}
+
+	for _, output := range results.Parameters {
+		parametersOutput("", "", output, flags.fullPath)
+	}
+}
+
+// parametersOutput output with fullpath or without and search for value or param.
+func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter, fullPathFlag bool) {
+	envVar := strings.Split(*v.Name, "/")
+	envVarLast := len(envVar)
+
+	if fullPathFlag == false {
+		if valueFlag != "" {
+			if valueFlag == *v.Value {
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+			}
+		} else if parameterFlag != "" {
+			if parameterFlag == envVar[envVarLast-1] {
+				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+			}
+		} else {
+			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+		}
+	} else {
+		if valueFlag != "" {
+			if valueFlag == *v.Value {
+				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+			}
+		} else if parameterFlag != "" {
+			if parameterFlag == envVar[envVarLast-1] {
+				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+			}
+		} else {
+			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+		}
+	}
+
 }
 
 func init() {
