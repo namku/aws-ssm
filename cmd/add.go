@@ -90,6 +90,7 @@ func init() {
 
 	addCmd.MarkFlagRequired("name")
 	addCmd.MarkFlagRequired("value")
+	addCmd.MarkFlagRequired("type")
 
 	rootCmd.AddCommand(addCmd)
 
