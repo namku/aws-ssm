@@ -85,8 +85,11 @@ func init() {
 	addCmd.Flags().StringP("name", "n", "", "Parameter name to add")
 	addCmd.Flags().StringP("value", "v", "", "Value of the parameter")
 	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
-	addCmd.Flags().StringP("type", "t", "", "Type of the value")
+	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
 	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
+
+	addCmd.MarkFlagRequired("name")
+	addCmd.MarkFlagRequired("value")
 
 	rootCmd.AddCommand(addCmd)
 
