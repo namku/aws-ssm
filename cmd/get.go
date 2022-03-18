@@ -33,10 +33,11 @@ type variablesSSM struct {
 }
 
 type flagsGet struct {
-	profile  string
-	region   string
-	param    []string // only needed for getParamters
-	fullPath bool
+	profile    string
+	region     string
+	param      []string // only needed for getParamters
+	fullPath   bool
+	decryption bool
 }
 
 type flagsGetByPath struct {
@@ -78,9 +79,10 @@ According to the search it can take a long time.`,
 		value, _ := cmd.Flags().GetString("value")
 		fullPath, _ := cmd.Flags().GetBool("fullPath")
 		param, _ := cmd.Flags().GetStringArray("param")
+		decryption, _ := cmd.Flags().GetBool("decryption")
 
-		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath}, bypath, parameter, value}
-		flags := flagsGet{profile, region, param, fullPath}
+		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption}, bypath, parameter, value}
+		flags := flagsGet{profile, region, param, fullPath, decryption}
 
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
 			if flagsPath.value != "" || flagsPath.parameter != "" {
@@ -103,8 +105,9 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 
 	for k, _ := range flag.bypath {
 		results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-			Path:      &flag.bypath[k],
-			Recursive: true,
+			Path:           &flag.bypath[k],
+			Recursive:      true,
+			WithDecryption: flag.decryption,
 		})
 		if err != nil {
 			dialog.Log("Error", err.Error(), cmd)
@@ -132,9 +135,10 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 	nextToken := *results.NextToken
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-		Path:      &flag.bypath[0],
-		Recursive: true,
-		NextToken: &nextToken,
+		Path:           &flag.bypath[0],
+		Recursive:      true,
+		NextToken:      &nextToken,
+		WithDecryption: flag.decryption,
 	})
 	if err != nil {
 		dialog.Log("Error", err.Error(), cmd)
@@ -162,9 +166,10 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 	nextToken := *results.NextToken
 
 	paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
-		Path:      &flag.bypath[0],
-		Recursive: true,
-		NextToken: &nextToken,
+		Path:           &flag.bypath[0],
+		Recursive:      true,
+		NextToken:      &nextToken,
+		WithDecryption: flag.decryption,
 	})
 
 	for paginator.HasMorePages() {
@@ -184,11 +189,12 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 }
 
 // getParameters retrives values from path with param.
-func getParameters(flags flagsGet, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flags.profile, flags.region)
+func getParameters(flag flagsGet, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
 	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
-		Names: flags.param,
+		Names:          flag.param,
+		WithDecryption: flag.decryption,
 	})
 	if err != nil {
 		dialog.Log("Error", err.Error(), cmd)
@@ -197,7 +203,7 @@ func getParameters(flags flagsGet, cmd *cobra.Command) {
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput("", "", output, flags.fullPath)
+		parametersOutput("", "", output, flag.fullPath)
 	}
 }
 
@@ -281,6 +287,7 @@ func init() {
 	getCmd.Flags().StringP("value", "v", "", "Search value in all paths")
 	getCmd.Flags().BoolP("fullPath", "f", false, "Output with full path param")
 	getCmd.Flags().StringArrayP("param", "p", nil, "Search query by param")
+	getCmd.Flags().BoolP("decryption", "d", false, "Return decrypted secure string value")
 
 	rootCmd.AddCommand(getCmd)
 
