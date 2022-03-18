@@ -25,7 +25,7 @@ type componentSSM struct {
 	PathSSM  string
 	ParamSSM string
 	ValueSSM string
-	TypeSSM  string
+	TypeSSM  types.ParameterType
 }
 
 type variablesSSM struct {
@@ -49,12 +49,12 @@ type flagsGetByPath struct {
 type ssmParam struct {
 	ssmParam []string
 	ssmValue []string
-	ssmType  string
+	ssmType  []types.ParameterType
 }
 
 var SSMParamSlice []string
 var SSMValueSlice []string
-var SSMTypeSlice []string
+var SSMTypeSlice []types.ParameterType
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
@@ -119,7 +119,7 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 		if results.NextToken != nil {
 			getParametersByPathNextToken(flag, results, cmd)
 		} else {
-			ssmP := ssmParam{SSMParamSlice, SSMValueSlice, ""}
+			ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
 			writeJson(ssmP, flag.fullPath)
 		}
 	}
@@ -149,7 +149,7 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 	if results.NextToken != nil {
 		nextPage(flag, results)
 	} else {
-		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, ""}
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
 		writeJson(ssmP, flag.fullPath)
 	}
 
@@ -178,7 +178,7 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 		}
 	}
 
-	ssmP := ssmParam{SSMParamSlice, SSMValueSlice, ""}
+	ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
 	writeJson(ssmP, flag.fullPath)
 
 }
@@ -206,6 +206,7 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
+	SSMTypeSlice = append(SSMTypeSlice, v.Type)
 	SSMValueSlice = append(SSMValueSlice, *v.Value)
 	if fullPathFlag == false {
 		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
@@ -258,7 +259,7 @@ func writeJson(ssmParam ssmParam, flagFullPath bool) {
 			path = append(path, ssmParam.ssmParam[k])
 		}
 
-		componentsSSM = append(componentsSSM, componentSSM{PathSSM: path[0], ParamSSM: param, ValueSSM: ssmParam.ssmValue[k], TypeSSM: "String"})
+		componentsSSM = append(componentsSSM, componentSSM{PathSSM: path[0], ParamSSM: param, ValueSSM: ssmParam.ssmValue[k], TypeSSM: ssmParam.ssmType[k]})
 	}
 
 	jsonData = variablesSSM{componentsSSM}
