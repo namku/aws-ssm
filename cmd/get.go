@@ -6,8 +6,11 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -17,6 +20,17 @@ import (
 	"github.com/namku/aws-ssm/pkg"
 	"github.com/spf13/cobra"
 )
+
+type componentSSM struct {
+	PathSSM  string
+	ParamSSM string
+	ValueSSM string
+	TypeSSM  string
+}
+
+type variablesSSM struct {
+	VariablesSSM []componentSSM
+}
 
 type flagsGet struct {
 	profile  string
@@ -31,6 +45,16 @@ type flagsGetByPath struct {
 	parameter string
 	value     string
 }
+
+type ssmParam struct {
+	ssmParam []string
+	ssmValue []string
+	ssmType  string
+}
+
+var SSMParamSlice []string
+var SSMValueSlice []string
+var SSMTypeSlice []string
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
@@ -61,10 +85,7 @@ According to the search it can take a long time.`,
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
 			if flagsPath.value != "" || flagsPath.parameter != "" {
 				flagsPath.bypath = []string{"/"}
-			} else {
-				flagsPath.bypath = flagsPath.bypath
 			}
-
 			getParametersByPath(flagsPath, cmd)
 		}
 		if len(flags.param) > 0 {
@@ -97,6 +118,9 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 
 		if results.NextToken != nil {
 			getParametersByPathNextToken(flag, results, cmd)
+		} else {
+			ssmP := ssmParam{SSMParamSlice, SSMValueSlice, ""}
+			writeJson(ssmP, flag.fullPath)
 		}
 	}
 }
@@ -124,7 +148,11 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 
 	if results.NextToken != nil {
 		nextPage(flag, results)
+	} else {
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, ""}
+		writeJson(ssmP, flag.fullPath)
 	}
+
 }
 
 // nextPage paginator options for GetParametersByPath
@@ -149,6 +177,10 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 		}
 	}
+
+	ssmP := ssmParam{SSMParamSlice, SSMValueSlice, ""}
+	writeJson(ssmP, flag.fullPath)
+
 }
 
 // getParameters retrives values from path with param.
@@ -174,7 +206,10 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
+	SSMValueSlice = append(SSMValueSlice, *v.Value)
 	if fullPathFlag == false {
+		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
+
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
@@ -187,6 +222,7 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 		}
 	} else {
+		SSMParamSlice = append(SSMParamSlice, *v.Name)
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
@@ -200,6 +236,42 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 		}
 	}
 
+}
+
+func writeJson(ssmParam ssmParam, flagFullPath bool) {
+	var jsonData variablesSSM
+	var componentsSSM []componentSSM
+
+	pathRegex, err := regexp.Compile(`/(.*)\/`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for k, _ := range ssmParam.ssmValue {
+		sliceFullPath := strings.Split(ssmParam.ssmParam[k], "/")
+		paramPos := len(sliceFullPath)
+		param := sliceFullPath[paramPos-1]
+		path := pathRegex.FindStringSubmatch(ssmParam.ssmParam[k])
+
+		// checking if exists parameters in ssm without "/"
+		if len(path) == 0 {
+			path = append(path, ssmParam.ssmParam[k])
+		}
+
+		componentsSSM = append(componentsSSM, componentSSM{PathSSM: path[0], ParamSSM: param, ValueSSM: ssmParam.ssmValue[k], TypeSSM: "String"})
+	}
+
+	jsonData = variablesSSM{componentsSSM}
+
+	content, err := json.MarshalIndent(jsonData, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ioutil.WriteFile("envVars.json", content, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func init() {
