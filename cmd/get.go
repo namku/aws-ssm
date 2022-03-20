@@ -41,6 +41,7 @@ type flagsGet struct {
 	param      []string // only needed for getParamters
 	fullPath   bool
 	decryption bool
+	json       string
 }
 
 // getParametersByPath params
@@ -49,7 +50,6 @@ type flagsGetByPath struct {
 	bypath    string
 	parameter string
 	value     string
-	json      string
 }
 
 type ssmParam struct {
@@ -87,8 +87,8 @@ According to the search it can take a long time.`,
 		decryption, _ := cmd.Flags().GetBool("decryption")
 		json, _ := cmd.Flags().GetString("json")
 
-		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption}, bypath, parameter, value, json}
-		flags := flagsGet{profile, region, param, fullPath, decryption}
+		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption, json}, bypath, parameter, value}
+		flags := flagsGet{profile, region, param, fullPath, decryption, json}
 
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
 			if flagsPath.value != "" || flagsPath.parameter != "" {
@@ -210,6 +210,11 @@ func getParameters(flag flagsGet, cmd *cobra.Command) {
 
 	for _, output := range results.Parameters {
 		parametersOutput("", "", output, flag.fullPath)
+	}
+
+	if flag.json != "" {
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		writeJson(ssmP, flag.fullPath, flag.json)
 	}
 }
 
