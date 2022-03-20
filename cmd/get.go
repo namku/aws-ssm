@@ -95,6 +95,11 @@ According to the search it can take a long time.`,
 		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption, json}, bypath, parameter, value}
 		flags := flagsGet{profile, region, param, fullPath, decryption, json}
 
+		// Start indicator
+		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+		indicatorSpinner.Start()
+		indicatorSpinner.Prefix = "  "
+
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
 			if flagsPath.value != "" || flagsPath.parameter != "" {
 				flagsPath.bypath = "/"
@@ -104,6 +109,7 @@ According to the search it can take a long time.`,
 		}
 		if len(flags.param) > 0 {
 			getParameters(flags, cmd)
+			indicatorSpinner.Stop()
 		}
 		if len(flagsPath.bypath) == 0 && len(flags.param) == 0 {
 			cmd.Help()
@@ -127,12 +133,6 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	}
 
 	for _, output := range results.Parameters {
-		// Start indicator:
-		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-		indicatorSpinner.Prefix = "  "
-		indicatorSpinner.Suffix = "  " + *output.Name
-		indicatorSpinner.Start()
-
 		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 	}
 
@@ -237,6 +237,11 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 
 	SSMTypeSlice = append(SSMTypeSlice, v.Type)
 	SSMValueSlice = append(SSMValueSlice, *v.Value)
+
+	// Define prefix and suffix indicator:
+	indicatorSpinner.Prefix = "  "
+	indicatorSpinner.Suffix = "  " + *v.Name
+
 	if fullPathFlag == false {
 		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
 
@@ -244,15 +249,18 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 			if valueFlag == *v.Value {
 				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else if parameterFlag != "" {
 			if parameterFlag == envVar[envVarLast-1] {
 				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else {
 			indicatorSpinner.Stop()
 			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+			indicatorSpinner.Start()
 		}
 	} else {
 		SSMParamSlice = append(SSMParamSlice, *v.Name)
@@ -260,15 +268,18 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 			if valueFlag == *v.Value {
 				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else if parameterFlag != "" {
 			if parameterFlag == envVar[envVarLast-1] {
 				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else {
 			indicatorSpinner.Stop()
 			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+			indicatorSpinner.Start()
 		}
 	}
 
