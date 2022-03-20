@@ -12,9 +12,11 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	"github.com/briandowns/spinner"
 	"github.com/mitchellh/colorstring"
 	"github.com/namku/aws-ssm/cmd/dialog"
 	"github.com/namku/aws-ssm/pkg"
@@ -62,6 +64,9 @@ var SSMParamSlice []string
 var SSMValueSlice []string
 var SSMTypeSlice []types.ParameterType
 
+// Indicator channel
+var indicatorSpinner *spinner.Spinner
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -95,6 +100,7 @@ According to the search it can take a long time.`,
 				flagsPath.bypath = "/"
 			}
 			getParametersByPath(flagsPath, cmd)
+			indicatorSpinner.Stop()
 		}
 		if len(flags.param) > 0 {
 			getParameters(flags, cmd)
@@ -121,6 +127,12 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	}
 
 	for _, output := range results.Parameters {
+		// Start indicator:
+		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+		indicatorSpinner.Prefix = "  "
+		indicatorSpinner.Suffix = "  " + *output.Name
+		indicatorSpinner.Start()
+
 		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 	}
 
@@ -230,26 +242,32 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 			}
 		} else if parameterFlag != "" {
 			if parameterFlag == envVar[envVarLast-1] {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 			}
 		} else {
+			indicatorSpinner.Stop()
 			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 		}
 	} else {
 		SSMParamSlice = append(SSMParamSlice, *v.Name)
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 			}
 		} else if parameterFlag != "" {
 			if parameterFlag == envVar[envVarLast-1] {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 			}
 		} else {
+			indicatorSpinner.Stop()
 			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 		}
 	}
