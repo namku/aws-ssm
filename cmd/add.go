@@ -6,8 +6,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
+	"io/ioutil"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -45,46 +47,41 @@ to quickly create a Cobra application.`,
 		description, _ := cmd.Flags().GetString("description")
 		typeVar, _ := cmd.Flags().GetString("type")
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
+		json, _ := cmd.Flags().GetString("json")
 
-		f := flags{profile, region, name, value, description, typeVar, overwrite}
-		fmt.Println(f)
+		flag := flags{profile, region, name, value, description, typeVar, overwrite}
 
-		content := pkg.ReadFile("envFile")
-		for _, v := range content {
-			s := strings.Split(v, "=")
-			//param := strings.TrimSpace(s[0])
-			fl := flags{profile, region, s[0], s[1], description, typeVar, overwrite}
-			fmt.Println(s[0])
-			fmt.Println(s[1])
-			putParameter(fl)
+		if json != "" {
+			importFromJson("env.json", flag.profile, flag.region, flag.overwrite)
+		} else {
+			putParameter(flag)
 		}
-
-		//putParameter(f)
 	},
+}
+
+func importFromJson(file string, profile string, region string, overwrite bool) {
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatalf("Failed to read file, %v", err)
+	}
+
+	data := variablesSSM{}
+
+	json.Unmarshal([]byte(content), &data)
+
+	for i, _ := range data.VariablesSSM {
+		putParameter(flags{profile: profile, region: region, name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite})
+	}
 }
 
 func putParameter(flags flags) {
 	ssmClient := pkg.NewSSM(flags.profile, flags.region)
 
-	var typeValue types.ParameterType
-
-	// Improve, string to types.ParameterType
-	switch flags.typeVar {
-	case "string":
-		typeValue = "String"
-	case "stringList":
-		typeValue = "StringList"
-	case "secret":
-		typeValue = "SecureString"
-	default:
-		fmt.Println("Valid options for --type [ string, stringList, secret ]")
-	}
-
 	_, err := ssmClient.PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:        &flags.name,
 		Value:       &flags.value,
 		Description: &flags.description,
-		Type:        typeValue,
+		Type:        types.ParameterType(flags.typeVar),
 		Overwrite:   flags.overwrite,
 	})
 
@@ -99,10 +96,7 @@ func init() {
 	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
 	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
 	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
-
-	//addCmd.MarkFlagRequired("name")
-	//addCmd.MarkFlagRequired("value")
-	//addCmd.MarkFlagRequired("type")
+	addCmd.Flags().StringP("json", "j", "", "Json file name to Import")
 
 	rootCmd.AddCommand(addCmd)
 
