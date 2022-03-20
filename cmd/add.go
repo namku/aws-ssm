@@ -25,6 +25,7 @@ type flags struct {
 	description string
 	typeVar     string
 	overwrite   bool
+	json        string
 }
 
 // addCmd represents the add command
@@ -49,10 +50,10 @@ to quickly create a Cobra application.`,
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 		json, _ := cmd.Flags().GetString("json")
 
-		flag := flags{profile, region, name, value, description, typeVar, overwrite}
+		flag := flags{profile, region, name, value, description, typeVar, overwrite, json}
 
 		if json != "" {
-			importFromJson("env.json", flag.profile, flag.region, flag.overwrite)
+			importFromJson(flag.json, flag.profile, flag.region, flag.overwrite)
 		} else {
 			putParameter(flag)
 		}
@@ -97,6 +98,7 @@ func init() {
 	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
 	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
 	addCmd.Flags().StringP("json", "j", "", "Json file name to Import")
+	addCmd.Flags().StringP("rename", "r", "", "Rename path")
 
 	rootCmd.AddCommand(addCmd)
 
