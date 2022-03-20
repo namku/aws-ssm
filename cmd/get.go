@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Struct for json file
 type componentSSM struct {
 	PathSSM  string
 	ParamSSM string
@@ -28,10 +29,12 @@ type componentSSM struct {
 	TypeSSM  types.ParameterType
 }
 
+// Struct for json file
 type variablesSSM struct {
 	VariablesSSM []componentSSM
 }
 
+// getParameters params
 type flagsGet struct {
 	profile    string
 	region     string
@@ -40,11 +43,13 @@ type flagsGet struct {
 	decryption bool
 }
 
+// getParametersByPath params
 type flagsGetByPath struct {
 	flagsGet
 	bypath    string
 	parameter string
 	value     string
+	json      string
 }
 
 type ssmParam struct {
@@ -80,8 +85,9 @@ According to the search it can take a long time.`,
 		fullPath, _ := cmd.Flags().GetBool("fullPath")
 		param, _ := cmd.Flags().GetStringArray("param")
 		decryption, _ := cmd.Flags().GetBool("decryption")
+		json, _ := cmd.Flags().GetString("json")
 
-		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption}, bypath, parameter, value}
+		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption}, bypath, parameter, value, json}
 		flags := flagsGet{profile, region, param, fullPath, decryption}
 
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
@@ -103,7 +109,6 @@ According to the search it can take a long time.`,
 func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
-	//for k, _ := range flag.bypath {
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 		Path:           &flag.bypath,
 		Recursive:      true,
@@ -121,11 +126,10 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 
 	if results.NextToken != nil {
 		getParametersByPathNextToken(flag, results, cmd)
-	} else {
+	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.fullPath)
+		writeJson(ssmP, flag.fullPath, flag.json)
 	}
-	//}
 }
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
@@ -152,9 +156,9 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 
 	if results.NextToken != nil {
 		nextPage(flag, results)
-	} else {
+	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.fullPath)
+		writeJson(ssmP, flag.fullPath, flag.json)
 	}
 
 }
@@ -183,8 +187,10 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 		}
 	}
 
-	ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-	writeJson(ssmP, flag.fullPath)
+	if flag.json != "" {
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		writeJson(ssmP, flag.fullPath, flag.json)
+	}
 
 }
 
@@ -245,7 +251,7 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 
 }
 
-func writeJson(ssmParam ssmParam, flagFullPath bool) {
+func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
 	var jsonData variablesSSM
 	var componentsSSM []componentSSM
 
@@ -275,7 +281,7 @@ func writeJson(ssmParam ssmParam, flagFullPath bool) {
 		log.Fatal(err)
 	}
 
-	err = ioutil.WriteFile("envVars.json", content, 0644)
+	err = ioutil.WriteFile(jsonFile, content, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -288,6 +294,7 @@ func init() {
 	getCmd.Flags().BoolP("fullPath", "f", false, "Output with full path param")
 	getCmd.Flags().StringArrayP("param", "p", nil, "Search query by param")
 	getCmd.Flags().BoolP("decryption", "d", false, "Return decrypted secure string value")
+	getCmd.Flags().StringP("json", "j", "", "Json file name to write query output")
 
 	rootCmd.AddCommand(getCmd)
 
