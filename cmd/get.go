@@ -6,8 +6,11 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -18,19 +21,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type componentSSM struct {
+	PathSSM  string
+	ParamSSM string
+	ValueSSM string
+	TypeSSM  types.ParameterType
+}
+
+type variablesSSM struct {
+	VariablesSSM []componentSSM
+}
+
 type flagsGet struct {
-	profile  string
-	region   string
-	param    []string // only needed for getParamters
-	fullPath bool
+	profile    string
+	region     string
+	param      []string // only needed for getParamters
+	fullPath   bool
+	decryption bool
 }
 
 type flagsGetByPath struct {
 	flagsGet
-	bypath    []string
+	bypath    string
 	parameter string
 	value     string
 }
+
+type ssmParam struct {
+	ssmParam []string
+	ssmValue []string
+	ssmType  []types.ParameterType
+}
+
+var SSMParamSlice []string
+var SSMValueSlice []string
+var SSMTypeSlice []types.ParameterType
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
@@ -49,22 +74,20 @@ According to the search it can take a long time.`,
 		profile, _ := cmd.Flags().GetString("profile")
 		region, _ := cmd.Flags().GetString("region")
 
-		bypath, _ := cmd.Flags().GetStringArray("bypath")
+		bypath, _ := cmd.Flags().GetString("bypath")
 		parameter, _ := cmd.Flags().GetString("parameter")
 		value, _ := cmd.Flags().GetString("value")
 		fullPath, _ := cmd.Flags().GetBool("fullPath")
 		param, _ := cmd.Flags().GetStringArray("param")
+		decryption, _ := cmd.Flags().GetBool("decryption")
 
-		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath}, bypath, parameter, value}
-		flags := flagsGet{profile, region, param, fullPath}
+		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption}, bypath, parameter, value}
+		flags := flagsGet{profile, region, param, fullPath, decryption}
 
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
 			if flagsPath.value != "" || flagsPath.parameter != "" {
-				flagsPath.bypath = []string{"/"}
-			} else {
-				flagsPath.bypath = flagsPath.bypath
+				flagsPath.bypath = "/"
 			}
-
 			getParametersByPath(flagsPath, cmd)
 		}
 		if len(flags.param) > 0 {
@@ -80,25 +103,29 @@ According to the search it can take a long time.`,
 func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
-	for k, _ := range flag.bypath {
-		results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-			Path:      &flag.bypath[k],
-			Recursive: true,
-		})
-		if err != nil {
-			dialog.Log("Error", err.Error(), cmd)
-			os.Exit(1)
-			return
-		}
-
-		for _, output := range results.Parameters {
-			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
-		}
-
-		if results.NextToken != nil {
-			getParametersByPathNextToken(flag, results, cmd)
-		}
+	//for k, _ := range flag.bypath {
+	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
+		Path:           &flag.bypath,
+		Recursive:      true,
+		WithDecryption: flag.decryption,
+	})
+	if err != nil {
+		dialog.Log("Error", err.Error(), cmd)
+		os.Exit(1)
+		return
 	}
+
+	for _, output := range results.Parameters {
+		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
+	}
+
+	if results.NextToken != nil {
+		getParametersByPathNextToken(flag, results, cmd)
+	} else {
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		writeJson(ssmP, flag.fullPath)
+	}
+	//}
 }
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
@@ -108,9 +135,10 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 	nextToken := *results.NextToken
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-		Path:      &flag.bypath[0],
-		Recursive: true,
-		NextToken: &nextToken,
+		Path:           &flag.bypath,
+		Recursive:      true,
+		NextToken:      &nextToken,
+		WithDecryption: flag.decryption,
 	})
 	if err != nil {
 		dialog.Log("Error", err.Error(), cmd)
@@ -124,7 +152,11 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 
 	if results.NextToken != nil {
 		nextPage(flag, results)
+	} else {
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		writeJson(ssmP, flag.fullPath)
 	}
+
 }
 
 // nextPage paginator options for GetParametersByPath
@@ -134,9 +166,10 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 	nextToken := *results.NextToken
 
 	paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
-		Path:      &flag.bypath[0],
-		Recursive: true,
-		NextToken: &nextToken,
+		Path:           &flag.bypath,
+		Recursive:      true,
+		NextToken:      &nextToken,
+		WithDecryption: flag.decryption,
 	})
 
 	for paginator.HasMorePages() {
@@ -149,14 +182,19 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
 		}
 	}
+
+	ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+	writeJson(ssmP, flag.fullPath)
+
 }
 
 // getParameters retrives values from path with param.
-func getParameters(flags flagsGet, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flags.profile, flags.region)
+func getParameters(flag flagsGet, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
 	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
-		Names: flags.param,
+		Names:          flag.param,
+		WithDecryption: flag.decryption,
 	})
 	if err != nil {
 		dialog.Log("Error", err.Error(), cmd)
@@ -165,7 +203,7 @@ func getParameters(flags flagsGet, cmd *cobra.Command) {
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput("", "", output, flags.fullPath)
+		parametersOutput("", "", output, flag.fullPath)
 	}
 }
 
@@ -174,7 +212,11 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
+	SSMTypeSlice = append(SSMTypeSlice, v.Type)
+	SSMValueSlice = append(SSMValueSlice, *v.Value)
 	if fullPathFlag == false {
+		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
+
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
@@ -187,6 +229,7 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 		}
 	} else {
+		SSMParamSlice = append(SSMParamSlice, *v.Name)
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
@@ -202,12 +245,49 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 
 }
 
+func writeJson(ssmParam ssmParam, flagFullPath bool) {
+	var jsonData variablesSSM
+	var componentsSSM []componentSSM
+
+	pathRegex, err := regexp.Compile(`/(.*)\/`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for k, _ := range ssmParam.ssmValue {
+		sliceFullPath := strings.Split(ssmParam.ssmParam[k], "/")
+		paramPos := len(sliceFullPath)
+		param := sliceFullPath[paramPos-1]
+		path := pathRegex.FindStringSubmatch(ssmParam.ssmParam[k])
+
+		// checking if exists parameters in ssm without "/"
+		if len(path) == 0 {
+			path = append(path, ssmParam.ssmParam[k])
+		}
+
+		componentsSSM = append(componentsSSM, componentSSM{PathSSM: path[0], ParamSSM: param, ValueSSM: ssmParam.ssmValue[k], TypeSSM: ssmParam.ssmType[k]})
+	}
+
+	jsonData = variablesSSM{componentsSSM}
+
+	content, err := json.MarshalIndent(jsonData, "", " ")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ioutil.WriteFile("envVars.json", content, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func init() {
-	getCmd.Flags().StringArrayP("bypath", "b", nil, "Search query by path")
+	getCmd.Flags().StringP("bypath", "b", "", "Search query by path")
 	getCmd.Flags().StringP("parameter", "r", "", "Search parameter in all paths")
 	getCmd.Flags().StringP("value", "v", "", "Search value in all paths")
 	getCmd.Flags().BoolP("fullPath", "f", false, "Output with full path param")
 	getCmd.Flags().StringArrayP("param", "p", nil, "Search query by param")
+	getCmd.Flags().BoolP("decryption", "d", false, "Return decrypted secure string value")
 
 	rootCmd.AddCommand(getCmd)
 

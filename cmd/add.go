@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -46,8 +47,19 @@ to quickly create a Cobra application.`,
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 
 		f := flags{profile, region, name, value, description, typeVar, overwrite}
+		fmt.Println(f)
 
-		putParameter(f)
+		content := pkg.ReadFile("envFile")
+		for _, v := range content {
+			s := strings.Split(v, "=")
+			//param := strings.TrimSpace(s[0])
+			fl := flags{profile, region, s[0], s[1], description, typeVar, overwrite}
+			fmt.Println(s[0])
+			fmt.Println(s[1])
+			putParameter(fl)
+		}
+
+		//putParameter(f)
 	},
 }
 
@@ -85,8 +97,12 @@ func init() {
 	addCmd.Flags().StringP("name", "n", "", "Parameter name to add")
 	addCmd.Flags().StringP("value", "v", "", "Value of the parameter")
 	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
-	addCmd.Flags().StringP("type", "t", "", "Type of the value")
+	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
 	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
+
+	//addCmd.MarkFlagRequired("name")
+	//addCmd.MarkFlagRequired("value")
+	//addCmd.MarkFlagRequired("type")
 
 	rootCmd.AddCommand(addCmd)
 
