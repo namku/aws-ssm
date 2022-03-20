@@ -42,7 +42,7 @@ type flagsGet struct {
 
 type flagsGetByPath struct {
 	flagsGet
-	bypath    []string
+	bypath    string
 	parameter string
 	value     string
 }
@@ -74,7 +74,7 @@ According to the search it can take a long time.`,
 		profile, _ := cmd.Flags().GetString("profile")
 		region, _ := cmd.Flags().GetString("region")
 
-		bypath, _ := cmd.Flags().GetStringArray("bypath")
+		bypath, _ := cmd.Flags().GetString("bypath")
 		parameter, _ := cmd.Flags().GetString("parameter")
 		value, _ := cmd.Flags().GetString("value")
 		fullPath, _ := cmd.Flags().GetBool("fullPath")
@@ -86,7 +86,7 @@ According to the search it can take a long time.`,
 
 		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
 			if flagsPath.value != "" || flagsPath.parameter != "" {
-				flagsPath.bypath = []string{"/"}
+				flagsPath.bypath = "/"
 			}
 			getParametersByPath(flagsPath, cmd)
 		}
@@ -103,29 +103,29 @@ According to the search it can take a long time.`,
 func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(flag.profile, flag.region)
 
-	for k, _ := range flag.bypath {
-		results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-			Path:           &flag.bypath[k],
-			Recursive:      true,
-			WithDecryption: flag.decryption,
-		})
-		if err != nil {
-			dialog.Log("Error", err.Error(), cmd)
-			os.Exit(1)
-			return
-		}
-
-		for _, output := range results.Parameters {
-			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
-		}
-
-		if results.NextToken != nil {
-			getParametersByPathNextToken(flag, results, cmd)
-		} else {
-			ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-			writeJson(ssmP, flag.fullPath)
-		}
+	//for k, _ := range flag.bypath {
+	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
+		Path:           &flag.bypath,
+		Recursive:      true,
+		WithDecryption: flag.decryption,
+	})
+	if err != nil {
+		dialog.Log("Error", err.Error(), cmd)
+		os.Exit(1)
+		return
 	}
+
+	for _, output := range results.Parameters {
+		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
+	}
+
+	if results.NextToken != nil {
+		getParametersByPathNextToken(flag, results, cmd)
+	} else {
+		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		writeJson(ssmP, flag.fullPath)
+	}
+	//}
 }
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
@@ -135,7 +135,7 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 	nextToken := *results.NextToken
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-		Path:           &flag.bypath[0],
+		Path:           &flag.bypath,
 		Recursive:      true,
 		NextToken:      &nextToken,
 		WithDecryption: flag.decryption,
@@ -166,7 +166,7 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 	nextToken := *results.NextToken
 
 	paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
-		Path:           &flag.bypath[0],
+		Path:           &flag.bypath,
 		Recursive:      true,
 		NextToken:      &nextToken,
 		WithDecryption: flag.decryption,
@@ -282,7 +282,7 @@ func writeJson(ssmParam ssmParam, flagFullPath bool) {
 }
 
 func init() {
-	getCmd.Flags().StringArrayP("bypath", "b", nil, "Search query by path")
+	getCmd.Flags().StringP("bypath", "b", "", "Search query by path")
 	getCmd.Flags().StringP("parameter", "r", "", "Search parameter in all paths")
 	getCmd.Flags().StringP("value", "v", "", "Search value in all paths")
 	getCmd.Flags().BoolP("fullPath", "f", false, "Output with full path param")
