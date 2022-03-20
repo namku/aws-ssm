@@ -12,9 +12,11 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	"github.com/briandowns/spinner"
 	"github.com/mitchellh/colorstring"
 	"github.com/namku/aws-ssm/cmd/dialog"
 	"github.com/namku/aws-ssm/pkg"
@@ -62,6 +64,9 @@ var SSMParamSlice []string
 var SSMValueSlice []string
 var SSMTypeSlice []types.ParameterType
 
+// Indicator channel
+var indicatorSpinner *spinner.Spinner
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -90,14 +95,22 @@ According to the search it can take a long time.`,
 		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption, json}, bypath, parameter, value}
 		flags := flagsGet{profile, region, param, fullPath, decryption, json}
 
-		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
-			if flagsPath.value != "" || flagsPath.parameter != "" {
+		// Start indicator
+		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+		indicatorSpinner.Start()
+		indicatorSpinner.Prefix = "  "
+
+		if flagsPath.value != "" || flagsPath.parameter != "" || len(flagsPath.bypath) > 0 {
+			if len(flagsPath.bypath) == 0 {
 				flagsPath.bypath = "/"
 			}
 			getParametersByPath(flagsPath, cmd)
+			indicatorSpinner.Stop()
 		}
+
 		if len(flags.param) > 0 {
 			getParameters(flags, cmd)
+			indicatorSpinner.Stop()
 		}
 		if len(flagsPath.bypath) == 0 && len(flags.param) == 0 {
 			cmd.Help()
@@ -225,32 +238,49 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 
 	SSMTypeSlice = append(SSMTypeSlice, v.Type)
 	SSMValueSlice = append(SSMValueSlice, *v.Value)
+
+	// Define prefix and suffix indicator:
+	indicatorSpinner.Prefix = "  "
+	indicatorSpinner.Suffix = "  " + *v.Name
+
 	if fullPathFlag == false {
 		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
 
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else if parameterFlag != "" {
 			if parameterFlag == envVar[envVarLast-1] {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else {
+			indicatorSpinner.Stop()
 			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
+			indicatorSpinner.Start()
 		}
 	} else {
 		SSMParamSlice = append(SSMParamSlice, *v.Name)
 		if valueFlag != "" {
 			if valueFlag == *v.Value {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else if parameterFlag != "" {
 			if parameterFlag == envVar[envVarLast-1] {
+				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+				indicatorSpinner.Start()
 			}
 		} else {
+			indicatorSpinner.Stop()
 			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
+			indicatorSpinner.Start()
 		}
 	}
 
