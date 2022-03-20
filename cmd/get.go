@@ -100,13 +100,14 @@ According to the search it can take a long time.`,
 		indicatorSpinner.Start()
 		indicatorSpinner.Prefix = "  "
 
-		if len(flagsPath.bypath) > 0 || flagsPath.value != "" || flagsPath.parameter != "" {
-			if flagsPath.value != "" || flagsPath.parameter != "" {
+		if flagsPath.value != "" || flagsPath.parameter != "" {
+			if len(flagsPath.bypath) == 0 {
 				flagsPath.bypath = "/"
 			}
 			getParametersByPath(flagsPath, cmd)
 			indicatorSpinner.Stop()
 		}
+
 		if len(flags.param) > 0 {
 			getParameters(flags, cmd)
 			indicatorSpinner.Stop()
