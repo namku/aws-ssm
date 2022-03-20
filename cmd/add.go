@@ -98,7 +98,6 @@ func init() {
 	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
 	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
 	addCmd.Flags().StringP("json", "j", "", "Json file name to Import")
-	addCmd.Flags().StringP("rename", "r", "", "Rename path")
 
 	rootCmd.AddCommand(addCmd)
 
