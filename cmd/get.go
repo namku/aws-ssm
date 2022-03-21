@@ -49,12 +49,13 @@ type variablesSSM struct {
 
 // getParameters params
 type flagsGet struct {
-	profile    string
-	region     string
-	names      []string // only needed for getParamters
-	showPath   bool
-	decryption bool
-	json       string
+	//profile    string
+	//region     string
+	flagsSession flagsSession
+	names        []string // only needed for getParamters
+	showPath     bool
+	decryption   bool
+	json         string
 }
 
 // getParametersByPath params
@@ -103,8 +104,8 @@ According to the search it can take a long time.`,
 		decryption, _ := cmd.Flags().GetBool("decryption")
 		json, _ := cmd.Flags().GetString("json")
 
-		flagsPath := flagsGetByPath{flagsGet{profile, region, names, showPath, decryption, json}, path, variable, value}
-		flags := flagsGet{profile, region, names, showPath, decryption, json}
+		flagsPath := flagsGetByPath{flagsGet{flagsSession{profile, region}, names, showPath, decryption, json}, path, variable, value}
+		flags := flagsGet{flagsSession{profile, region}, names, showPath, decryption, json}
 
 		// Start indicator
 		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
@@ -131,7 +132,7 @@ According to the search it can take a long time.`,
 
 // getParamtersByPath retrive values from path without param.
 func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+	ssmClient := pkg.NewSSM(flag.flagsSession.profile, flag.flagsSession.region)
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 		Path:           &flag.path,
@@ -158,7 +159,7 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
 func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+	ssmClient := pkg.NewSSM(flag.flagsSession.profile, flag.flagsSession.region)
 
 	nextToken := *results.NextToken
 
@@ -189,7 +190,7 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 
 // nextPage paginator options for GetParametersByPath
 func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+	ssmClient := pkg.NewSSM(flag.flagsSession.profile, flag.flagsSession.region)
 
 	nextToken := *results.NextToken
 
@@ -220,7 +221,7 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 
 // getParameters retrives values from path with param.
 func getParameters(flag flagsGet, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+	ssmClient := pkg.NewSSM(flag.flagsSession.profile, flag.flagsSession.region)
 
 	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
 		Names:          flag.names,

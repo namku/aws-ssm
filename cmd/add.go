@@ -65,7 +65,7 @@ to quickly create a Cobra application.`,
 		if json != "" {
 			importFromJson(flag.json, flag.flagsSession.profile, flag.flagsSession.region, flag.overwrite)
 		} else {
-			putParameter(flag)
+			putParameter(flag, flag.flagsSession.profile, flag.flagsSession.region)
 		}
 	},
 }
@@ -81,12 +81,12 @@ func importFromJson(file string, profile string, region string, overwrite bool) 
 	json.Unmarshal([]byte(content), &data)
 
 	for i, _ := range data.VariablesSSM {
-		putParameter(flagsPut{name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite})
+		putParameter(flagsPut{name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite}, profile, region)
 	}
 }
 
-func putParameter(flags flagsPut) {
-	ssmClient := pkg.NewSSM(flags.flagsSession.profile, flags.flagsSession.region)
+func putParameter(flags flagsPut, profile string, region string) {
+	ssmClient := pkg.NewSSM(profile, region)
 
 	_, err := ssmClient.PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:        &flags.name,
