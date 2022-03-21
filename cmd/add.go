@@ -28,15 +28,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type flags struct {
-	profile     string
-	region      string
-	name        string
-	value       string
-	description string
-	typeVar     string
-	overwrite   bool
-	json        string
+type flagsPut struct {
+	flagsSession flagsSession
+	name         string
+	value        string
+	description  string
+	typeVar      string
+	overwrite    bool
+	json         string
 }
 
 // addCmd represents the add command
@@ -61,10 +60,10 @@ to quickly create a Cobra application.`,
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 		json, _ := cmd.Flags().GetString("json")
 
-		flag := flags{profile, region, name, value, description, typeVar, overwrite, json}
+		flag := flagsPut{flagsSession{profile, region}, name, value, description, typeVar, overwrite, json}
 
 		if json != "" {
-			importFromJson(flag.json, flag.profile, flag.region, flag.overwrite)
+			importFromJson(flag.json, flag.flagsSession.profile, flag.flagsSession.region, flag.overwrite)
 		} else {
 			putParameter(flag)
 		}
@@ -82,12 +81,12 @@ func importFromJson(file string, profile string, region string, overwrite bool) 
 	json.Unmarshal([]byte(content), &data)
 
 	for i, _ := range data.VariablesSSM {
-		putParameter(flags{profile: profile, region: region, name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite})
+		putParameter(flagsPut{name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite})
 	}
 }
 
-func putParameter(flags flags) {
-	ssmClient := pkg.NewSSM(flags.profile, flags.region)
+func putParameter(flags flagsPut) {
+	ssmClient := pkg.NewSSM(flags.flagsSession.profile, flags.flagsSession.region)
 
 	_, err := ssmClient.PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:        &flags.name,
@@ -111,14 +110,4 @@ func init() {
 	addCmd.Flags().StringP("json", "j", "", "Json file name to import")
 
 	rootCmd.AddCommand(addCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
