@@ -29,13 +29,12 @@ import (
 )
 
 type flagsPut struct {
-	flagsSession flagsSession
-	name         string
-	value        string
-	description  string
-	typeVar      string
-	overwrite    bool
-	json         string
+	name        string
+	value       string
+	description string
+	typeVar     string
+	overwrite   bool
+	json        string
 }
 
 // addCmd represents the add command
@@ -60,17 +59,17 @@ to quickly create a Cobra application.`,
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 		json, _ := cmd.Flags().GetString("json")
 
-		flag := flagsPut{flagsSession{profile, region}, name, value, description, typeVar, overwrite, json}
+		flag := flagsPut{name, value, description, typeVar, overwrite, json}
 
 		if json != "" {
-			importFromJson(flag.json, flag.flagsSession.profile, flag.flagsSession.region, flag.overwrite)
+			importFromJson(flag.json, flag.overwrite, profile, region)
 		} else {
-			putParameter(flag, flag.flagsSession.profile, flag.flagsSession.region)
+			putParameter(flag, profile, region)
 		}
 	},
 }
 
-func importFromJson(file string, profile string, region string, overwrite bool) {
+func importFromJson(file string, overwrite bool, profile string, region string) {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Fatalf("Failed to read file, %v", err)

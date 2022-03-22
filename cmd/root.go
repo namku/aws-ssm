@@ -21,11 +21,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type flagsSession struct {
-	profile string
-	region  string
-}
-
 var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
