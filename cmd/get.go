@@ -61,6 +61,7 @@ type flagsGetByPath struct {
 	path     string
 	variable string
 	value    string
+	contains bool
 }
 
 type ssmParam struct {
@@ -96,12 +97,13 @@ According to the search it can take a long time.`,
 		path, _ := cmd.Flags().GetString("path")
 		variable, _ := cmd.Flags().GetString("variable")
 		value, _ := cmd.Flags().GetString("value")
+		contains, _ := cmd.Flags().GetBool("contains")
 		showPath, _ := cmd.Flags().GetBool("show-path")
 		names, _ := cmd.Flags().GetStringArray("names")
 		decryption, _ := cmd.Flags().GetBool("decryption")
 		json, _ := cmd.Flags().GetString("json")
 
-		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, json}, path, variable, value}
+		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, json}, path, variable, value, contains}
 		flags := flagsGet{names, showPath, decryption, json}
 
 		// Start indicator
@@ -143,7 +145,7 @@ func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.variable, output, flag.showPath)
+		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath)
 	}
 
 	if results.NextToken != nil {
@@ -173,7 +175,7 @@ func getParametersByPathNextToken(flag flagsGetByPath, profile string, region st
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.variable, output, flag.showPath)
+		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath)
 	}
 
 	if results.NextToken != nil {
@@ -205,7 +207,7 @@ func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.G
 		}
 
 		for _, output := range results.Parameters {
-			parametersOutput(flag.value, flag.variable, output, flag.showPath)
+			parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath)
 		}
 	}
 
@@ -231,7 +233,7 @@ func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Comm
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput("", "", output, flag.showPath)
+		parametersOutput("", "", output, false, flag.showPath)
 	}
 
 	if flag.json != "" {
@@ -241,46 +243,51 @@ func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Comm
 }
 
 // parametersOutput output with fullpath or without and search for value or param.
-func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, showPathFlag bool) {
+func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, contains bool, showPathFlag bool) {
+	envVar := strings.Split(*v.Name, "/")
+	envVarLast := len(envVar)
+
+	// Define prefix and suffix indicator:
+	//indicatorSpinner.Prefix = "  "
+	indicatorSpinner.Suffix = "  " + *v.Name
+
+	if showPathFlag == false {
+		ouputWithWithoutFlag(valueFlag, variableFlag, v, contains, envVar[envVarLast-1])
+	} else {
+		ouputWithWithoutFlag(valueFlag, variableFlag, v, contains, *v.Name)
+	}
+}
+
+func ouputWithWithoutFlag(valueFlag string, variableFlag string, v types.Parameter, contains bool, name string) {
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
 	SSMTypeSlice = append(SSMTypeSlice, v.Type)
 	SSMValueSlice = append(SSMValueSlice, *v.Value)
+	SSMParamSlice = append(SSMParamSlice, name)
 
-	// Define prefix and suffix indicator:
-	indicatorSpinner.Prefix = "  "
-	indicatorSpinner.Suffix = "  " + *v.Name
-
-	if showPathFlag == false {
-		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
-
-		if valueFlag != "" {
+	if valueFlag != "" {
+		if contains {
 			if strings.Contains(*v.Value, valueFlag) {
-				//if valueFlag == *v.Value {
-				outputColor(envVar[envVarLast-1], *v.Value)
-			}
-		} else if variableFlag != "" {
-			if variableFlag == envVar[envVarLast-1] {
-				outputColor(envVar[envVarLast-1], *v.Value)
+				outputColor(name, *v.Value)
 			}
 		} else {
-			outputColor(envVar[envVarLast-1], *v.Value)
+			if valueFlag == *v.Value {
+				outputColor(name, *v.Value)
+			}
+		}
+	} else if variableFlag != "" {
+		if contains {
+			if strings.Contains(envVar[envVarLast-1], variableFlag) {
+				outputColor(name, *v.Value)
+			}
+		} else {
+			if variableFlag == envVar[envVarLast-1] {
+				outputColor(name, *v.Value)
+			}
 		}
 	} else {
-		SSMParamSlice = append(SSMParamSlice, *v.Name)
-		if valueFlag != "" {
-			if strings.Contains(*v.Value, valueFlag) {
-				//if valueFlag == *v.Value {
-				outputColor(*v.Name, *v.Value)
-			}
-		} else if variableFlag != "" {
-			if variableFlag == envVar[envVarLast-1] {
-				outputColor(*v.Name, *v.Value)
-			}
-		} else {
-			outputColor(*v.Name, *v.Value)
-		}
+		outputColor(name, *v.Value)
 	}
 
 }
@@ -331,6 +338,7 @@ func init() {
 	getCmd.Flags().StringP("path", "p", "", "Search path recursively")
 	getCmd.Flags().StringP("variable", "r", "", "Search variable in paths")
 	getCmd.Flags().StringP("value", "v", "", "Search value in paths")
+	getCmd.Flags().BoolP("contains", "c", false, "Search contains value in paths")
 	getCmd.Flags().BoolP("show-path", "f", false, "return with path")
 	getCmd.Flags().StringArrayP("names", "n", nil, "return specific names")
 	getCmd.Flags().BoolP("decryption", "d", false, "Return decrypted secure string value")
