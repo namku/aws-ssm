@@ -247,8 +247,7 @@ func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, 
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
-	// Define prefix and suffix indicator:
-	//indicatorSpinner.Prefix = "  "
+	// Define suffix indicator
 	indicatorSpinner.Suffix = "  " + *v.Name
 
 	if showPathFlag == false {
