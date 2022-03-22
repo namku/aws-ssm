@@ -34,7 +34,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Struct for json file
+// Struct json file
 type componentSSM struct {
 	PathSSM  string
 	ParamSSM string
@@ -42,7 +42,7 @@ type componentSSM struct {
 	TypeSSM  types.ParameterType
 }
 
-// Struct for json file
+// Struct json file
 type variablesSSM struct {
 	VariablesSSM []componentSSM
 }
