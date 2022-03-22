@@ -1,6 +1,17 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Isaac Lopez syak7771@gmail.com
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 package cmd
 
@@ -23,7 +34,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Struct for json file
+// Struct json file
 type componentSSM struct {
 	PathSSM  string
 	ParamSSM string
@@ -31,17 +42,15 @@ type componentSSM struct {
 	TypeSSM  types.ParameterType
 }
 
-// Struct for json file
+// Struct json file
 type variablesSSM struct {
 	VariablesSSM []componentSSM
 }
 
 // getParameters params
 type flagsGet struct {
-	profile    string
-	region     string
-	param      []string // only needed for getParamters
-	fullPath   bool
+	names      []string // only needed for getParamters
+	showPath   bool
 	decryption bool
 	json       string
 }
@@ -49,9 +58,9 @@ type flagsGet struct {
 // getParametersByPath params
 type flagsGetByPath struct {
 	flagsGet
-	bypath    string
-	parameter string
-	value     string
+	path     string
+	variable string
+	value    string
 }
 
 type ssmParam struct {
@@ -84,46 +93,46 @@ According to the search it can take a long time.`,
 		profile, _ := cmd.Flags().GetString("profile")
 		region, _ := cmd.Flags().GetString("region")
 
-		bypath, _ := cmd.Flags().GetString("bypath")
-		parameter, _ := cmd.Flags().GetString("parameter")
+		path, _ := cmd.Flags().GetString("path")
+		variable, _ := cmd.Flags().GetString("variable")
 		value, _ := cmd.Flags().GetString("value")
-		fullPath, _ := cmd.Flags().GetBool("fullPath")
-		param, _ := cmd.Flags().GetStringArray("param")
+		showPath, _ := cmd.Flags().GetBool("show-path")
+		names, _ := cmd.Flags().GetStringArray("names")
 		decryption, _ := cmd.Flags().GetBool("decryption")
 		json, _ := cmd.Flags().GetString("json")
 
-		flagsPath := flagsGetByPath{flagsGet{profile, region, param, fullPath, decryption, json}, bypath, parameter, value}
-		flags := flagsGet{profile, region, param, fullPath, decryption, json}
+		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, json}, path, variable, value}
+		flags := flagsGet{names, showPath, decryption, json}
 
 		// Start indicator
 		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 		indicatorSpinner.Start()
 		indicatorSpinner.Prefix = "  "
 
-		if flagsPath.value != "" || flagsPath.parameter != "" || len(flagsPath.bypath) > 0 {
-			if len(flagsPath.bypath) == 0 {
-				flagsPath.bypath = "/"
+		if flagsPath.value != "" || flagsPath.variable != "" || len(flagsPath.path) > 0 {
+			if len(flagsPath.path) == 0 {
+				flagsPath.path = "/"
 			}
-			getParametersByPath(flagsPath, cmd)
+			getParametersByPath(flagsPath, profile, region, cmd)
 			indicatorSpinner.Stop()
 		}
 
-		if len(flags.param) > 0 {
-			getParameters(flags, cmd)
+		if len(flags.names) > 0 {
+			getParameters(flags, profile, region, cmd)
 			indicatorSpinner.Stop()
 		}
-		if len(flagsPath.bypath) == 0 && len(flags.param) == 0 {
+		if len(flagsPath.path) == 0 && len(flags.names) == 0 {
 			cmd.Help()
 		}
 	},
 }
 
 // getParamtersByPath retrive values from path without param.
-func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(profile, region)
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-		Path:           &flag.bypath,
+		Path:           &flag.path,
 		Recursive:      true,
 		WithDecryption: flag.decryption,
 	})
@@ -134,25 +143,25 @@ func getParametersByPath(flag flagsGetByPath, cmd *cobra.Command) {
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
+		parametersOutput(flag.value, flag.variable, output, flag.showPath)
 	}
 
 	if results.NextToken != nil {
-		getParametersByPathNextToken(flag, results, cmd)
+		getParametersByPathNextToken(flag, profile, region, results, cmd)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.fullPath, flag.json)
+		writeJson(ssmP, flag.showPath, flag.json)
 	}
 }
 
 // getParamtersByPathNexToken retrive values from path without param from the token.
-func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+func getParametersByPathNextToken(flag flagsGetByPath, profile string, region string, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(profile, region)
 
 	nextToken := *results.NextToken
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-		Path:           &flag.bypath,
+		Path:           &flag.path,
 		Recursive:      true,
 		NextToken:      &nextToken,
 		WithDecryption: flag.decryption,
@@ -164,26 +173,26 @@ func getParametersByPathNextToken(flag flagsGetByPath, results *ssm.GetParameter
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
+		parametersOutput(flag.value, flag.variable, output, flag.showPath)
 	}
 
 	if results.NextToken != nil {
-		nextPage(flag, results)
+		nextPage(flag, profile, region, results)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.fullPath, flag.json)
+		writeJson(ssmP, flag.showPath, flag.json)
 	}
 
 }
 
 // nextPage paginator options for GetParametersByPath
-func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.GetParametersByPathOutput) {
+	ssmClient := pkg.NewSSM(profile, region)
 
 	nextToken := *results.NextToken
 
 	paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
-		Path:           &flag.bypath,
+		Path:           &flag.path,
 		Recursive:      true,
 		NextToken:      &nextToken,
 		WithDecryption: flag.decryption,
@@ -196,23 +205,23 @@ func nextPage(flag flagsGetByPath, results *ssm.GetParametersByPathOutput) {
 		}
 
 		for _, output := range results.Parameters {
-			parametersOutput(flag.value, flag.parameter, output, flag.fullPath)
+			parametersOutput(flag.value, flag.variable, output, flag.showPath)
 		}
 	}
 
 	if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.fullPath, flag.json)
+		writeJson(ssmP, flag.showPath, flag.json)
 	}
 
 }
 
 // getParameters retrives values from path with param.
-func getParameters(flag flagsGet, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(flag.profile, flag.region)
+func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Command) {
+	ssmClient := pkg.NewSSM(profile, region)
 
 	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
-		Names:          flag.param,
+		Names:          flag.names,
 		WithDecryption: flag.decryption,
 	})
 	if err != nil {
@@ -222,17 +231,17 @@ func getParameters(flag flagsGet, cmd *cobra.Command) {
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput("", "", output, flag.fullPath)
+		parametersOutput("", "", output, flag.showPath)
 	}
 
 	if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.fullPath, flag.json)
+		writeJson(ssmP, flag.showPath, flag.json)
 	}
 }
 
 // parametersOutput output with fullpath or without and search for value or param.
-func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter, fullPathFlag bool) {
+func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, showPathFlag bool) {
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
@@ -243,7 +252,7 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 	indicatorSpinner.Prefix = "  "
 	indicatorSpinner.Suffix = "  " + *v.Name
 
-	if fullPathFlag == false {
+	if showPathFlag == false {
 		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
 
 		if valueFlag != "" {
@@ -252,8 +261,8 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 				indicatorSpinner.Start()
 			}
-		} else if parameterFlag != "" {
-			if parameterFlag == envVar[envVarLast-1] {
+		} else if variableFlag != "" {
+			if variableFlag == envVar[envVarLast-1] {
 				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
 				indicatorSpinner.Start()
@@ -271,8 +280,8 @@ func parametersOutput(valueFlag string, parameterFlag string, v types.Parameter,
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 				indicatorSpinner.Start()
 			}
-		} else if parameterFlag != "" {
-			if parameterFlag == envVar[envVarLast-1] {
+		} else if variableFlag != "" {
+			if variableFlag == envVar[envVarLast-1] {
 				indicatorSpinner.Stop()
 				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
 				indicatorSpinner.Start()
@@ -301,7 +310,7 @@ func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
 		param := sliceFullPath[paramPos-1]
 		path := pathRegex.FindStringSubmatch(ssmParam.ssmParam[k])
 
-		// checking if exists parameters in ssm without "/"
+		// checking if exists names in ssm without "/"
 		if len(path) == 0 {
 			path = append(path, ssmParam.ssmParam[k])
 		}
@@ -323,23 +332,13 @@ func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
 }
 
 func init() {
-	getCmd.Flags().StringP("bypath", "b", "", "Search query by path")
-	getCmd.Flags().StringP("parameter", "r", "", "Search parameter in all paths")
-	getCmd.Flags().StringP("value", "v", "", "Search value in all paths")
-	getCmd.Flags().BoolP("fullPath", "f", false, "Output with full path param")
-	getCmd.Flags().StringArrayP("param", "p", nil, "Search query by param")
+	getCmd.Flags().StringP("path", "p", "", "Search path recursively")
+	getCmd.Flags().StringP("variable", "r", "", "Search variable in paths")
+	getCmd.Flags().StringP("value", "v", "", "Search value in paths")
+	getCmd.Flags().BoolP("show-path", "f", false, "return with path")
+	getCmd.Flags().StringArrayP("names", "n", nil, "return specific names")
 	getCmd.Flags().BoolP("decryption", "d", false, "Return decrypted secure string value")
-	getCmd.Flags().StringP("json", "j", "", "Json file name to write query output")
+	getCmd.Flags().StringP("json", "j", "", "Json path/name to write results")
 
 	rootCmd.AddCommand(getCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

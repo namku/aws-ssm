@@ -1,6 +1,17 @@
 /*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
+Copyright © 2022 Isaac Lopez syak7771@gmail.com
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 package cmd
 
@@ -17,9 +28,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type flags struct {
-	profile     string
-	region      string
+type flagsPut struct {
 	name        string
 	value       string
 	description string
@@ -50,17 +59,17 @@ to quickly create a Cobra application.`,
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 		json, _ := cmd.Flags().GetString("json")
 
-		flag := flags{profile, region, name, value, description, typeVar, overwrite, json}
+		flag := flagsPut{name, value, description, typeVar, overwrite, json}
 
 		if json != "" {
-			importFromJson(flag.json, flag.profile, flag.region, flag.overwrite)
+			importFromJson(flag.json, flag.overwrite, profile, region)
 		} else {
-			putParameter(flag)
+			putParameter(flag, profile, region)
 		}
 	},
 }
 
-func importFromJson(file string, profile string, region string, overwrite bool) {
+func importFromJson(file string, overwrite bool, profile string, region string) {
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Fatalf("Failed to read file, %v", err)
@@ -71,12 +80,12 @@ func importFromJson(file string, profile string, region string, overwrite bool) 
 	json.Unmarshal([]byte(content), &data)
 
 	for i, _ := range data.VariablesSSM {
-		putParameter(flags{profile: profile, region: region, name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite})
+		putParameter(flagsPut{name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite}, profile, region)
 	}
 }
 
-func putParameter(flags flags) {
-	ssmClient := pkg.NewSSM(flags.profile, flags.region)
+func putParameter(flags flagsPut, profile string, region string) {
+	ssmClient := pkg.NewSSM(profile, region)
 
 	_, err := ssmClient.PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:        &flags.name,
@@ -97,17 +106,7 @@ func init() {
 	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
 	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
 	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
-	addCmd.Flags().StringP("json", "j", "", "Json file name to Import")
+	addCmd.Flags().StringP("json", "j", "", "Json file name to import")
 
 	rootCmd.AddCommand(addCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
