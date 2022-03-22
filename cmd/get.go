@@ -36,15 +36,15 @@ import (
 
 // Struct json file
 type componentSSM struct {
-	PathSSM  string
-	ParamSSM string
-	ValueSSM string
-	TypeSSM  types.ParameterType
+	PathSSM  string              `json:"path"`
+	ParamSSM string              `json:"param"`
+	ValueSSM string              `json:"value"`
+	TypeSSM  types.ParameterType `json:"type"`
 }
 
 // Struct json file
 type variablesSSM struct {
-	VariablesSSM []componentSSM
+	VariablesSSM []componentSSM `json:"variables"`
 }
 
 // getParameters params
