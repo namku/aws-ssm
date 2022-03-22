@@ -256,43 +256,39 @@ func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, 
 		SSMParamSlice = append(SSMParamSlice, envVar[envVarLast-1])
 
 		if valueFlag != "" {
-			if valueFlag == *v.Value {
-				indicatorSpinner.Stop()
-				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
-				indicatorSpinner.Start()
+			if strings.Contains(*v.Value, valueFlag) {
+				//if valueFlag == *v.Value {
+				outputColor(envVar[envVarLast-1], *v.Value)
 			}
 		} else if variableFlag != "" {
 			if variableFlag == envVar[envVarLast-1] {
-				indicatorSpinner.Stop()
-				colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
-				indicatorSpinner.Start()
+				outputColor(envVar[envVarLast-1], *v.Value)
 			}
 		} else {
-			indicatorSpinner.Stop()
-			colorstring.Println("[blue]" + envVar[envVarLast-1] + "=[reset]" + *v.Value)
-			indicatorSpinner.Start()
+			outputColor(envVar[envVarLast-1], *v.Value)
 		}
 	} else {
 		SSMParamSlice = append(SSMParamSlice, *v.Name)
 		if valueFlag != "" {
-			if valueFlag == *v.Value {
-				indicatorSpinner.Stop()
-				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
-				indicatorSpinner.Start()
+			if strings.Contains(*v.Value, valueFlag) {
+				//if valueFlag == *v.Value {
+				outputColor(*v.Name, *v.Value)
 			}
 		} else if variableFlag != "" {
 			if variableFlag == envVar[envVarLast-1] {
-				indicatorSpinner.Stop()
-				colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
-				indicatorSpinner.Start()
+				outputColor(*v.Name, *v.Value)
 			}
 		} else {
-			indicatorSpinner.Stop()
-			colorstring.Println("[blue]" + *v.Name + "=[reset]" + *v.Value)
-			indicatorSpinner.Start()
+			outputColor(*v.Name, *v.Value)
 		}
 	}
 
+}
+
+func outputColor(name, value string) {
+	indicatorSpinner.Stop()
+	colorstring.Println("[blue]" + name + "=[reset]" + value)
+	indicatorSpinner.Start()
 }
 
 func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
