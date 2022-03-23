@@ -22,4 +22,4 @@ aws-ssm get [flags]
 | Flag | Description                                          | Type          | Default | Required |
 |------|---------------------------------------------         |---------------|---------|----------|
 | `-n` | Return the value of the searched name.               | `stringArray` |         |    No    |
-| `-p` | Return the value(s) of the path searched recursivly. | `stringArray` |         |    No    |
+| `-p` | Return the value(s) of the path searched recursivly. |    `string`   |         |    No    |
