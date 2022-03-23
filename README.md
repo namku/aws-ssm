@@ -2,7 +2,15 @@
 
 Aws-ssm is a command line tool to manage fast and efficiently AWS parameter store.
 
-How many times has the name of a project changed and it referred to the parameters saved in SSM or have you had to look for some values and then change them in all those parameters, with aws-ssm you can do that and more cool  things fast and efficiently.
+these are some things that can be done with <b>aws-ssm</b> CLI:
+
+- Change some hierarchies names.
+- Search values in the hierarchies.
+- Import a lot of variables to AWS System Manager Parameter Store from json file.
+- Create a json file (hierarchies, values, type)
+- ...
+
+With <b>aws-ssm</b> you can do that and more cool  things fast and efficiently.
 
 ***
 
