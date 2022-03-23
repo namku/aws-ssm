@@ -1,0 +1,3 @@
+- Spinner function generic.
+- Fix output and spinner when import json file with existing params.
+- Check json format.

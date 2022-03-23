@@ -62,6 +62,7 @@ to quickly create a Cobra application.`,
 		flag := flagsPut{name, value, description, typeVar, overwrite, json}
 
 		if json != "" {
+			startSpinner()
 			importFromJson(flag.json, flag.overwrite, profile, region)
 		} else {
 			putParameter(flag, profile, region)
@@ -80,8 +81,14 @@ func importFromJson(file string, overwrite bool, profile string, region string) 
 	json.Unmarshal([]byte(content), &data)
 
 	for i, _ := range data.VariablesSSM {
+		// Define suffix spinner
+		indicatorSpinner.Suffix = "  " + data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ValueSSM
+
 		putParameter(flagsPut{name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite}, profile, region)
 	}
+
+	// Stop spinner
+	indicatorSpinner.Stop()
 }
 
 func putParameter(flags flagsPut, profile string, region string) {

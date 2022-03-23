@@ -106,20 +106,17 @@ According to the search it can take a long time.`,
 		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, json}, path, variable, value, contains}
 		flags := flagsGet{names, showPath, decryption, json}
 
-		// Start indicator
-		indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-		indicatorSpinner.Start()
-		indicatorSpinner.Prefix = "  "
-
 		if flagsPath.value != "" || flagsPath.variable != "" || len(flagsPath.path) > 0 {
 			if len(flagsPath.path) == 0 {
 				flagsPath.path = "/"
 			}
+			startSpinner()
 			getParametersByPath(flagsPath, profile, region, cmd)
 			indicatorSpinner.Stop()
 		}
 
 		if len(flags.names) > 0 {
+			startSpinner()
 			getParameters(flags, profile, region, cmd)
 			indicatorSpinner.Stop()
 		}
@@ -247,7 +244,7 @@ func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, 
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
-	// Define suffix indicator
+	// Define suffix spinner
 	indicatorSpinner.Suffix = "  " + *v.Name
 
 	if showPathFlag == false {
@@ -295,6 +292,13 @@ func outputColor(name, value string) {
 	indicatorSpinner.Stop()
 	colorstring.Println("[blue]" + name + "=[reset]" + value)
 	indicatorSpinner.Start()
+}
+
+func startSpinner() {
+	// Start spinner
+	indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+	indicatorSpinner.Start()
+	indicatorSpinner.Prefix = "  "
 }
 
 func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
