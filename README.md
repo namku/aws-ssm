@@ -19,16 +19,16 @@ CLI command to get information from SSM.
 aws-ssm get [flags]
 ```
 
-| Flag | Description                                          | Type          | Default | Required |
-|------|------------------------------------------------------|---------------|---------|----------|
-| `-n` | Return the value of the searched name.               | `stringArray` |         | No       |
-| `-p` | Return the value(s) of the path searched recursivly. | `string`      |         | No       |
-| `-r` | Return the value(s) of the variable searched.        | `string`      |         | No       |
-| `-v` | Return the path(s) of the value searched.            | `string`      |         | No       |
-| `-f` | Output with full name not only variable.             | `bool`        | `false` | No       |
-| `-d` | Decrypt SecureString output.                         | `bool`        | `false` | No       |
-| `-c` | Return the path(s) contain this value.               | `bool`        | `false` | No       |
-| `-j` | Write a json file with the output.                   | `string`      |         | No       |
+| Flag | Description                                                                                                        | Type          | Default | Required |
+|------|--------------------------------------------------------------------------------------------------------------------|---------------|---------|----------|
+| `-n` | The hierarchy for the parameter. Hierarchies start with a forward slash (/) except the last part of the parameter. | `stringArray` |         | No       |
+| `-p` | Return the value(s) of the path searched recursivly.                                                               | `string`      |         | No       |
+| `-r` | Return the value(s) of the variable searched.                                                                      | `string`      |         | No       |
+| `-v` | Return the path(s) of the value searched.                                                                          | `string`      |         | No       |
+| `-f` | Output with full name not only variable.                                                                           | `bool`        | `false` | No       |
+| `-d` | Decrypt SecureString output.                                                                                       | `bool`        | `false` | No       |
+| `-c` | Return the path(s) contain this value.                                                                             | `bool`        | `false` | No       |
+| `-j` | Write a json file with the output.                                                                                 | `string`      |         | No       |
 
 
 ### `add`
@@ -47,3 +47,5 @@ aws-ssm add [flags]
 | `-o` | Overwrite the value of the parameter.                | `bool`        | `false` | No       |
 | `-d` | Description of the parameter.                        | `string`      |         | No       |
 | `-j` | Json file to import in the parameter store.          | `string`      |         | No       |
+
+
