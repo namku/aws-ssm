@@ -76,15 +76,15 @@ func importFromJson(file string, overwrite bool, profile string, region string) 
 		log.Fatalf("Failed to read file, %v", err)
 	}
 
-	data := variablesSSM{}
+	data := parameters{}
 
 	json.Unmarshal([]byte(content), &data)
 
-	for i, _ := range data.VariablesSSM {
+	for i, _ := range data.Parameters {
 		// Define suffix spinner
-		indicatorSpinner.Suffix = "  " + data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ValueSSM
+		indicatorSpinner.Suffix = "  " + data.Parameters[i].Name + data.Parameters[i].Value
 
-		putParameter(flagsPut{name: data.VariablesSSM[i].PathSSM + data.VariablesSSM[i].ParamSSM, value: data.VariablesSSM[i].ValueSSM, description: "", typeVar: string(data.VariablesSSM[i].TypeSSM), overwrite: overwrite}, profile, region)
+		putParameter(flagsPut{name: data.Parameters[i].Name, value: data.Parameters[i].Value, description: "", typeVar: string(data.Parameters[i].Type), overwrite: overwrite}, profile, region)
 	}
 
 	// Stop spinner
