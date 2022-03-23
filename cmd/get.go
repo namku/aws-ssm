@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -147,6 +148,8 @@ func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd
 		getParametersByPathNextToken(flag, profile, region, results, cmd)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		fmt.Println("bypath")
+		fmt.Println(ssmP.ssmParam)
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
 }
@@ -177,6 +180,8 @@ func getParametersByPathNextToken(flag flagsGetByPath, profile string, region st
 		nextPage(flag, profile, region, results)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		fmt.Println("nextToken")
+		fmt.Println(ssmP.ssmParam)
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
 
@@ -208,6 +213,8 @@ func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.G
 
 	if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
+		fmt.Println("hola")
+		fmt.Println(ssmP.ssmParam)
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
 
@@ -256,32 +263,43 @@ func ouputWithWithoutFlag(valueFlag string, variableFlag string, v types.Paramet
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
-	SSMTypeSlice = append(SSMTypeSlice, v.Type)
-	SSMValueSlice = append(SSMValueSlice, *v.Value)
-	SSMParamSlice = append(SSMParamSlice, name)
-
 	if valueFlag != "" {
 		if contains {
 			if strings.Contains(*v.Value, valueFlag) {
 				outputColor(name, *v.Value)
+				SSMTypeSlice = append(SSMTypeSlice, v.Type)
+				SSMValueSlice = append(SSMValueSlice, *v.Value)
+				SSMParamSlice = append(SSMParamSlice, name)
 			}
 		} else {
 			if valueFlag == *v.Value {
 				outputColor(name, *v.Value)
+				SSMTypeSlice = append(SSMTypeSlice, v.Type)
+				SSMValueSlice = append(SSMValueSlice, *v.Value)
+				SSMParamSlice = append(SSMParamSlice, name)
 			}
 		}
 	} else if variableFlag != "" {
 		if contains {
 			if strings.Contains(envVar[envVarLast-1], variableFlag) {
 				outputColor(name, *v.Value)
+				SSMTypeSlice = append(SSMTypeSlice, v.Type)
+				SSMValueSlice = append(SSMValueSlice, *v.Value)
+				SSMParamSlice = append(SSMParamSlice, name)
 			}
 		} else {
 			if variableFlag == envVar[envVarLast-1] {
 				outputColor(name, *v.Value)
+				SSMTypeSlice = append(SSMTypeSlice, v.Type)
+				SSMValueSlice = append(SSMValueSlice, *v.Value)
+				SSMParamSlice = append(SSMParamSlice, name)
 			}
 		}
 	} else {
 		outputColor(name, *v.Value)
+		SSMTypeSlice = append(SSMTypeSlice, v.Type)
+		SSMValueSlice = append(SSMValueSlice, *v.Value)
+		SSMParamSlice = append(SSMParamSlice, name)
 	}
 
 }
