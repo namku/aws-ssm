@@ -18,7 +18,6 @@ package cmd
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -148,8 +147,6 @@ func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd
 		getParametersByPathNextToken(flag, profile, region, results, cmd)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		fmt.Println("bypath")
-		fmt.Println(ssmP.ssmParam)
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
 }
@@ -180,8 +177,6 @@ func getParametersByPathNextToken(flag flagsGetByPath, profile string, region st
 		nextPage(flag, profile, region, results)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		fmt.Println("nextToken")
-		fmt.Println(ssmP.ssmParam)
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
 
@@ -213,8 +208,6 @@ func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.G
 
 	if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		fmt.Println("hola")
-		fmt.Println(ssmP.ssmParam)
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
 
