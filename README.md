@@ -2,7 +2,7 @@
 
 Aws-ssm is a command line tool to manage fast and efficiently AWS parameter store.
 
-these are some things that can be done with <b>aws-ssm</b> CLI:
+These are some things that can be done with <b>aws-ssm</b> CLI:
 
 - Change some hierarchies names.
 - Search values in the hierarchies.
