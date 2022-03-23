@@ -41,7 +41,7 @@ aws-ssm get [flags]
 
 ### `add`
 
-CLI command to add information from SSM.
+CLI command to add information to SSM.
 
 ```bash
 aws-ssm add [flags]
