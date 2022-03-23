@@ -7,4 +7,4 @@ How many times has the name of a project changed and it referred to the paramete
 ***
 
 ## Getting Started
-Retrive the `aws-ssm` binary by downloading a pre-compiled binary from [`Download sectio`](https://github.com/namku/aws-ssm/tags) or compiling it from source.
+Retrive the `aws-ssm` binary by downloading a pre-compiled binary from [`Download section`](https://github.com/namku/aws-ssm/tags) or compiling it from source.
