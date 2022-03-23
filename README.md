@@ -21,13 +21,13 @@ aws-ssm get [flags]
 
 | Flag | Description                                                                                                        | Type          | Default | Required |
 |------|--------------------------------------------------------------------------------------------------------------------|---------------|---------|----------|
-| `-n` | The hierarchy for the parameter. Hierarchies start with a forward slash (/) except the last part of the parameter. | `stringArray` |         | No       |
-| `-p` | Return the value(s) of the path searched recursivly.                                                               | `string`      |         | No       |
-| `-r` | Return the value(s) of the variable searched.                                                                      | `string`      |         | No       |
-| `-v` | Return the path(s) of the value searched.                                                                          | `string`      |         | No       |
-| `-f` | Output with full name not only variable.                                                                           | `bool`        | `false` | No       |
-| `-d` | Decrypt SecureString output.                                                                                       | `bool`        | `false` | No       |
-| `-c` | Return the path(s) contain this value.                                                                             | `bool`        | `false` | No       |
+| `-n` | The complete name of the paramter (hierarchy).                                                                     | `stringArray` |         | No       |
+| `-p` | The hierarchy for the parameter. Hierarchies start with a forward slash (/) except the last part of the parameter. | `string`      |         | No       |
+| `-r` | The last part of the hierarchy (variable).                                                                         | `string`      |         | No       |
+| `-v` | The value of the hierarchy.                                                                                        | `string`      |         | No       |
+| `-f` | Print hierarchy.                                                                                                   | `bool`        | `false` | No       |
+| `-d` | Print decrypted SecureString.                                                                                      | `bool`        | `false` | No       |
+| `-c` | Search all values containing the value in -v flag.                                                                 | `bool`        | `false` | No       |
 | `-j` | Write a json file with the output.                                                                                 | `string`      |         | No       |
 
 
@@ -41,11 +41,11 @@ aws-ssm add [flags]
 
 | Flag | Description                                          | Type          | Default | Required |
 |------|------------------------------------------------------|---------------|---------|----------|
-| `-n` | Name of the parameter.                               | `string`      |         | No       |
-| `-v` | Value of the parameter.                              | `string`      |         | No       |
+| `-n` | Name of the hierarchy.                               | `string`      |         | No       |
+| `-v` | Value of the hierarchy.                              | `string`      |         | No       |
 | `-t` | Type of the value.                                   | `string`      |         | No       |
-| `-o` | Overwrite the value of the parameter.                | `bool`        | `false` | No       |
-| `-d` | Description of the parameter.                        | `string`      |         | No       |
+| `-o` | Overwrite the value of the hierarchy.                | `bool`        | `false` | No       |
+| `-d` | Description of the hierarchy.                        | `string`      |         | No       |
 | `-j` | Json file to import in the parameter store.          | `string`      |         | No       |
 
 
