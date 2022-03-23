@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -35,16 +34,15 @@ import (
 )
 
 // Struct json file
-type componentSSM struct {
-	PathSSM  string              `json:"path"`
-	ParamSSM string              `json:"param"`
-	ValueSSM string              `json:"value"`
-	TypeSSM  types.ParameterType `json:"type"`
+type component struct {
+	Name  string              `json:"Name"`
+	Type  types.ParameterType `json:"Type"`
+	Value string              `json:"Value"`
 }
 
 // Struct json file
-type variablesSSM struct {
-	VariablesSSM []componentSSM `json:"variables"`
+type parameters struct {
+	Parameters []component `json:"Parameters"`
 }
 
 // getParameters params
@@ -302,29 +300,14 @@ func startSpinner() {
 }
 
 func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
-	var jsonData variablesSSM
-	var componentsSSM []componentSSM
-
-	pathRegex, err := regexp.Compile(`/(.*)\/`)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var jsonData parameters
+	var components []component
 
 	for k, _ := range ssmParam.ssmValue {
-		sliceFullPath := strings.Split(ssmParam.ssmParam[k], "/")
-		paramPos := len(sliceFullPath)
-		param := sliceFullPath[paramPos-1]
-		path := pathRegex.FindStringSubmatch(ssmParam.ssmParam[k])
-
-		// checking if exists names in ssm without "/"
-		if len(path) == 0 {
-			path = append(path, ssmParam.ssmParam[k])
-		}
-
-		componentsSSM = append(componentsSSM, componentSSM{PathSSM: path[0], ParamSSM: param, ValueSSM: ssmParam.ssmValue[k], TypeSSM: ssmParam.ssmType[k]})
+		components = append(components, component{Name: ssmParam.ssmParam[k], Value: ssmParam.ssmValue[k], Type: ssmParam.ssmType[k]})
 	}
 
-	jsonData = variablesSSM{componentsSSM}
+	jsonData = parameters{components}
 
 	content, err := json.MarshalIndent(jsonData, "", " ")
 	if err != nil {
