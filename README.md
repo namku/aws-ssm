@@ -1,6 +1,6 @@
 # `aws-ssm`
 
-Aws-ssm is a command line tool to manage fast and efficiently AWS parameter store.
+<b>Aws-ssm</> is a command line tool to manage fast and efficiently AWS parameter store.
 
 These are some things that can be done with <b>aws-ssm</b> CLI:
 
