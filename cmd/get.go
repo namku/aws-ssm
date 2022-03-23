@@ -267,39 +267,29 @@ func ouputWithWithoutFlag(valueFlag string, variableFlag string, v types.Paramet
 		if contains {
 			if strings.Contains(*v.Value, valueFlag) {
 				outputColor(name, *v.Value)
-				SSMTypeSlice = append(SSMTypeSlice, v.Type)
-				SSMValueSlice = append(SSMValueSlice, *v.Value)
-				SSMParamSlice = append(SSMParamSlice, name)
+				appendToJson(v, name)
 			}
 		} else {
 			if valueFlag == *v.Value {
 				outputColor(name, *v.Value)
-				SSMTypeSlice = append(SSMTypeSlice, v.Type)
-				SSMValueSlice = append(SSMValueSlice, *v.Value)
-				SSMParamSlice = append(SSMParamSlice, name)
+				appendToJson(v, name)
 			}
 		}
 	} else if variableFlag != "" {
 		if contains {
 			if strings.Contains(envVar[envVarLast-1], variableFlag) {
 				outputColor(name, *v.Value)
-				SSMTypeSlice = append(SSMTypeSlice, v.Type)
-				SSMValueSlice = append(SSMValueSlice, *v.Value)
-				SSMParamSlice = append(SSMParamSlice, name)
+				appendToJson(v, name)
 			}
 		} else {
 			if variableFlag == envVar[envVarLast-1] {
 				outputColor(name, *v.Value)
-				SSMTypeSlice = append(SSMTypeSlice, v.Type)
-				SSMValueSlice = append(SSMValueSlice, *v.Value)
-				SSMParamSlice = append(SSMParamSlice, name)
+				appendToJson(v, name)
 			}
 		}
 	} else {
 		outputColor(name, *v.Value)
-		SSMTypeSlice = append(SSMTypeSlice, v.Type)
-		SSMValueSlice = append(SSMValueSlice, *v.Value)
-		SSMParamSlice = append(SSMParamSlice, name)
+		appendToJson(v, name)
 	}
 
 }
@@ -315,6 +305,12 @@ func startSpinner() {
 	indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 	indicatorSpinner.Start()
 	indicatorSpinner.Prefix = "  "
+}
+
+func appendToJson(v types.Parameter, name string) {
+	SSMTypeSlice = append(SSMTypeSlice, v.Type)
+	SSMValueSlice = append(SSMValueSlice, *v.Value)
+	SSMParamSlice = append(SSMParamSlice, name)
 }
 
 func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
