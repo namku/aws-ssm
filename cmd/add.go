@@ -54,8 +54,8 @@ to quickly create a Cobra application.`,
 
 		name, _ := cmd.Flags().GetString("name")
 		value, _ := cmd.Flags().GetString("value")
-		description, _ := cmd.Flags().GetString("description")
 		typeVar, _ := cmd.Flags().GetString("type")
+		description, _ := cmd.Flags().GetString("description")
 		overwrite, _ := cmd.Flags().GetBool("overwrite")
 		json, _ := cmd.Flags().GetString("json")
 
@@ -101,12 +101,12 @@ func putParameter(flags flagsPut, profile string, region string) {
 }
 
 func init() {
-	addCmd.Flags().StringP("name", "n", "", "Parameter name to add")
-	addCmd.Flags().StringP("value", "v", "", "Value of the parameter")
-	addCmd.Flags().StringP("description", "d", "", "Description of the parameter")
-	addCmd.Flags().StringP("type", "t", "", "Type of the value [ string, stringList, secret ]")
-	addCmd.Flags().BoolP("overwrite", "o", false, "Type of the value")
-	addCmd.Flags().StringP("json", "j", "", "Json file name to import")
+	addCmd.Flags().StringP("name", "n", "", "Name of the hierarchy.")
+	addCmd.Flags().StringP("value", "v", "", "Value of the hierarchy.")
+	addCmd.Flags().StringP("type", "t", "", "Type of the value. [ string, stringList, secret ]")
+	addCmd.Flags().StringP("description", "d", "", "Description of the hierarchy.")
+	addCmd.Flags().BoolP("overwrite", "o", false, "Overwrite the value of the hierarchy.")
+	addCmd.Flags().StringP("json", "j", "", "Json file to import in the parameter store.")
 
 	rootCmd.AddCommand(addCmd)
 }

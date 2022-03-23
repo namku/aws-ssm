@@ -47,13 +47,13 @@ CLI command to add information to SSM.
 aws-ssm add [flags]
 ```
 
-| Flag | Description                                          | Type          | Default | Required |
-|------|------------------------------------------------------|---------------|---------|----------|
-| `-n` | Name of the hierarchy.                               | `string`      |         | No       |
-| `-v` | Value of the hierarchy.                              | `string`      |         | No       |
-| `-t` | Type of the value.                                   | `string`      |         | No       |
-| `-o` | Overwrite the value of the hierarchy.                | `bool`        | `false` | No       |
-| `-d` | Description of the hierarchy.                        | `string`      |         | No       |
-| `-j` | Json file to import in the parameter store.          | `string`      |         | No       |
+| Flag | Description                                             | Type          | Default | Required |
+|------|---------------------------------------------------------|---------------|---------|----------|
+| `-n` | Name of the hierarchy.                                  | `string`      |         | No       |
+| `-v` | Value of the hierarchy.                                 | `string`      |         | No       |
+| `-t` | Type of the value. [ String, StringList, SecureString ] | `string`      |         | No       |
+| `-d` | Description of the hierarchy.                           | `string`      |         | No       |
+| `-o` | Overwrite the value of the hierarchy.                   | `bool`        | `false` | No       |
+| `-j` | Json file to import in the parameter store.             | `string`      |         | No       |
 
 

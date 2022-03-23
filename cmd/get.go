@@ -94,13 +94,13 @@ According to the search it can take a long time.`,
 		profile, _ := cmd.Flags().GetString("profile")
 		region, _ := cmd.Flags().GetString("region")
 
+		names, _ := cmd.Flags().GetStringArray("names")
 		path, _ := cmd.Flags().GetString("path")
 		variable, _ := cmd.Flags().GetString("variable")
 		value, _ := cmd.Flags().GetString("value")
-		contains, _ := cmd.Flags().GetBool("contains")
 		showPath, _ := cmd.Flags().GetBool("show-path")
-		names, _ := cmd.Flags().GetStringArray("names")
 		decryption, _ := cmd.Flags().GetBool("decryption")
+		contains, _ := cmd.Flags().GetBool("contains")
 		json, _ := cmd.Flags().GetString("json")
 
 		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, json}, path, variable, value, contains}
@@ -334,14 +334,14 @@ func writeJson(ssmParam ssmParam, flagFullPath bool, jsonFile string) {
 }
 
 func init() {
-	getCmd.Flags().StringP("path", "p", "", "Search path recursively")
-	getCmd.Flags().StringP("variable", "r", "", "Search variable in paths")
-	getCmd.Flags().StringP("value", "v", "", "Search value in paths")
-	getCmd.Flags().BoolP("contains", "c", false, "Search contains value in paths")
-	getCmd.Flags().BoolP("show-path", "f", false, "return with path")
-	getCmd.Flags().StringArrayP("names", "n", nil, "return specific names")
-	getCmd.Flags().BoolP("decryption", "d", false, "Return decrypted secure string value")
-	getCmd.Flags().StringP("json", "j", "", "Json path/name to write results")
+	getCmd.Flags().StringArrayP("names", "n", nil, "The complete name of the paramter (hierarchy).")
+	getCmd.Flags().StringP("path", "p", "", "The hierarchy for the parameter. Hierarchies start with a forward slash (/) except the last part of the parameter.")
+	getCmd.Flags().StringP("variable", "r", "", "The last part of the hierarchy (variable).")
+	getCmd.Flags().StringP("value", "v", "", "The value of the hierarchy.")
+	getCmd.Flags().BoolP("show-path", "f", false, "Print hierarchy.")
+	getCmd.Flags().BoolP("decryption", "d", false, "Print decrypted SecureString.")
+	getCmd.Flags().BoolP("contains", "c", false, "Search all values containing the value in -v flag.")
+	getCmd.Flags().StringP("json", "j", "", "Write a json file with the output.")
 
 	rootCmd.AddCommand(getCmd)
 }
