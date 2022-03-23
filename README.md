@@ -19,6 +19,7 @@ CLI command for get information from SSM.
 aws-ssm get [flags]
 ```
 
-| Flag | Description                                 | Type          | Default | Required |
-|------|---------------------------------------------|---------------|---------|----------|
-| `-n` | Return the value from of the searched name. | `stringArray` |   ""    |    No    |
+| Flag | Description                                          | Type          | Default | Required |
+|------|---------------------------------------------         |---------------|---------|----------|
+| `-n` | Return the value of the searched name.               | `stringArray` |         |    No    |
+| `-p` | Return the value(s) of the path searched recursivly. | `stringArray` |         |    No    |
