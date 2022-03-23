@@ -6,5 +6,19 @@ How many times has the name of a project changed and it referred to the paramete
 
 ***
 
-## Getting Started
-Retrive the `aws-ssm` binary by downloading a pre-compiled binary from [`Download section`](https://github.com/namku/aws-ssm/tags) or compiling it from source.
+## ⚡️ Getting Started
+Retrive the <b>aws-ssm</b> binary by downloading a pre-compiled binary from [`Download section`](https://github.com/namku/aws-ssm/tags) or compiling it from source (Go +1.7 required).
+
+## ⚙️  Commands & Flags
+
+### `get`
+
+CLI command for get information from SSM.
+
+```bash
+aws-ssm get [flags]
+```
+
+| Flag | Description                                 | Type          | Default | Required |
+|------|---------------------------------------------|---------------|---------|----------|
+| `-n` | Return the value from of the searched name. | `stringArray` |   ""    |    No    |
