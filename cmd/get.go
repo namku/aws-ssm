@@ -50,6 +50,7 @@ type flagsGet struct {
 	names      []string // only needed for getParamters
 	showPath   bool
 	decryption bool
+	lastUser   bool
 	json       string
 }
 
@@ -99,10 +100,11 @@ According to the search it can take a long time.`,
 		showPath, _ := cmd.Flags().GetBool("show-path")
 		decryption, _ := cmd.Flags().GetBool("decryption")
 		contains, _ := cmd.Flags().GetBool("contains")
+		lastUser, _ := cmd.Flags().GetBool("last-user")
 		json, _ := cmd.Flags().GetString("json")
 
-		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, json}, path, variable, value, contains}
-		flags := flagsGet{names, showPath, decryption, json}
+		flagsPath := flagsGetByPath{flagsGet{names, showPath, decryption, lastUser, json}, path, variable, value, contains}
+		flags := flagsGet{names, showPath, decryption, lastUser, json}
 
 		if flagsPath.value != "" || flagsPath.variable != "" || len(flagsPath.path) > 0 {
 			if len(flagsPath.path) == 0 {
@@ -140,7 +142,7 @@ func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath)
+		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath, "")
 	}
 
 	if results.NextToken != nil {
@@ -170,7 +172,7 @@ func getParametersByPathNextToken(flag flagsGetByPath, profile string, region st
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath)
+		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath, "")
 	}
 
 	if results.NextToken != nil {
@@ -202,7 +204,7 @@ func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.G
 		}
 
 		for _, output := range results.Parameters {
-			parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath)
+			parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath, "")
 		}
 	}
 
@@ -216,6 +218,7 @@ func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.G
 // getParameters retrives values from path with param.
 func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
+	var lastUserModified string
 
 	results, err := ssmClient.GetParameters(context.TODO(), &ssm.GetParametersInput{
 		Names:          flag.names,
@@ -228,7 +231,12 @@ func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Comm
 	}
 
 	for _, output := range results.Parameters {
-		parametersOutput("", "", output, false, flag.showPath)
+		if flag.lastUser {
+			lastUserModified = lastModifiedUser(*output.Name, profile, region)
+		} else {
+			lastUserModified = ""
+		}
+		parametersOutput("", "", output, false, flag.showPath, lastUserModified)
 	}
 
 	if flag.json != "" {
@@ -237,8 +245,29 @@ func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Comm
 	}
 }
 
+// Return the last user modified parameter.
+func lastModifiedUser(names string, profile, region string) string {
+	ssmClient := pkg.NewSSM(profile, region)
+
+	key := "Name"
+	results, err := ssmClient.DescribeParameters(context.TODO(), &ssm.DescribeParametersInput{
+		ParameterFilters: []types.ParameterStringFilter{
+			{
+				Key:    &key,
+				Values: []string{names},
+			},
+		},
+	})
+	if err != nil {
+		log.Fatalf("failed to get last modified user , %v", err)
+		os.Exit(1)
+	}
+
+	return *results.Parameters[0].LastModifiedUser
+}
+
 // parametersOutput output with fullpath or without and search for value or param.
-func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, contains bool, showPathFlag bool) {
+func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, contains bool, showPathFlag bool, lastUser string) {
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
@@ -246,50 +275,50 @@ func parametersOutput(valueFlag string, variableFlag string, v types.Parameter, 
 	indicatorSpinner.Suffix = "  " + *v.Name
 
 	if showPathFlag == false {
-		ouputWithWithoutFlag(valueFlag, variableFlag, v, contains, envVar[envVarLast-1])
+		ouputWithWithoutFlag(valueFlag, variableFlag, v, contains, envVar[envVarLast-1], lastUser)
 	} else {
-		ouputWithWithoutFlag(valueFlag, variableFlag, v, contains, *v.Name)
+		ouputWithWithoutFlag(valueFlag, variableFlag, v, contains, *v.Name, lastUser)
 	}
 }
 
-func ouputWithWithoutFlag(valueFlag string, variableFlag string, v types.Parameter, contains bool, name string) {
+func ouputWithWithoutFlag(valueFlag string, variableFlag string, v types.Parameter, contains bool, name string, lastUser string) {
 	envVar := strings.Split(*v.Name, "/")
 	envVarLast := len(envVar)
 
 	if valueFlag != "" {
 		if contains {
 			if strings.Contains(*v.Value, valueFlag) {
-				outputColor(name, *v.Value)
+				outputColor(name, *v.Value, lastUser)
 				appendToJson(v, name)
 			}
 		} else {
 			if valueFlag == *v.Value {
-				outputColor(name, *v.Value)
+				outputColor(name, *v.Value, lastUser)
 				appendToJson(v, name)
 			}
 		}
 	} else if variableFlag != "" {
 		if contains {
 			if strings.Contains(envVar[envVarLast-1], variableFlag) {
-				outputColor(name, *v.Value)
+				outputColor(name, *v.Value, lastUser)
 				appendToJson(v, name)
 			}
 		} else {
 			if variableFlag == envVar[envVarLast-1] {
-				outputColor(name, *v.Value)
+				outputColor(name, *v.Value, lastUser)
 				appendToJson(v, name)
 			}
 		}
 	} else {
-		outputColor(name, *v.Value)
+		outputColor(name, *v.Value, lastUser)
 		appendToJson(v, name)
 	}
 
 }
 
-func outputColor(name, value string) {
+func outputColor(name, value string, lastUser string) {
 	indicatorSpinner.Stop()
-	colorstring.Println("[blue]" + name + "=[reset]" + value)
+	colorstring.Println("[blue]" + name + "=[reset]" + value + "[yellow] " + lastUser + "[reset]")
 	indicatorSpinner.Start()
 }
 
@@ -335,6 +364,7 @@ func init() {
 	getCmd.Flags().BoolP("show-path", "f", false, "Print hierarchy.")
 	getCmd.Flags().BoolP("decryption", "d", false, "Print decrypted SecureString.")
 	getCmd.Flags().BoolP("contains", "c", false, "Search all values containing the value in -v flag.")
+	getCmd.Flags().BoolP("last-user", "u", false, "Amazon Resource Name (ARN) of the Amazon Web Services user who last changed the parameter.")
 	getCmd.Flags().StringP("json", "j", "", "Write a json file with the output.")
 
 	rootCmd.AddCommand(getCmd)
