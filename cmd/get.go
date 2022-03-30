@@ -364,7 +364,7 @@ func init() {
 	getCmd.Flags().BoolP("show-path", "f", false, "Print hierarchy.")
 	getCmd.Flags().BoolP("decryption", "d", false, "Print decrypted SecureString.")
 	getCmd.Flags().BoolP("contains", "c", false, "Search all values containing the value in -v flag.")
-	getCmd.Flags().BoolP("last-user", "u", false, "Amazon Resource Name (ARN) of the Amazon Web Services user who last changed the parameter.")
+	getCmd.Flags().BoolP("last-user", "u", false, "Amazon Resource Name (ARN) of the Amazon Web Services user who last changed the parameter. (used with -n)")
 	getCmd.Flags().StringP("json", "j", "", "Write a json file with the output.")
 
 	rootCmd.AddCommand(getCmd)

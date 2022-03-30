@@ -36,6 +36,7 @@ aws-ssm get [flags]
 | `-f` | Print hierarchy.                                                                                                   | `bool`        | `false` | No       |
 | `-d` | Print decrypted SecureString.                                                                                      | `bool`        | `false` | No       |
 | `-c` | Search all values containing the value in -v flag.                                                                 | `bool`        | `false` | No       |
+| `-u` | .Amazon Resource Name (ARN) of the Amazon Web Services user who last changed the parameter. (used with -n)         | `bool`        | `false` | No       |
 | `-j` | Write a json file with the output.                                                                                 | `string`      |         | No       |
 
 
