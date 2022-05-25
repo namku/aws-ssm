@@ -82,7 +82,7 @@ func importFromJson(file string, overwrite bool, profile string, region string) 
 
 	for i, _ := range data.Parameters {
 		// Define suffix spinner
-		indicatorSpinner.Suffix = "  " + data.Parameters[i].Name + data.Parameters[i].Value
+		indicatorSpinner.Suffix = "  " + data.Parameters[i].Name + "=" + data.Parameters[i].Value
 
 		putParameter(flagsPut{name: data.Parameters[i].Name, value: data.Parameters[i].Value, description: "", typeVar: string(data.Parameters[i].Type), overwrite: overwrite}, profile, region)
 	}
