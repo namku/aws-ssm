@@ -327,6 +327,7 @@ func startSpinner() {
 	indicatorSpinner = spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 	indicatorSpinner.Start()
 	indicatorSpinner.Prefix = "  "
+	pkg.SetupCloseHandler(indicatorSpinner)
 }
 
 func appendToJson(v types.Parameter, name string) {

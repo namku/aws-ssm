@@ -15,7 +15,9 @@ limitations under the License.
 */
 package main
 
-import "github.com/namku/aws-ssm/cmd"
+import (
+	"github.com/namku/aws-ssm/cmd"
+)
 
 func main() {
 	cmd.Execute()
