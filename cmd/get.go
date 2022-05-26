@@ -136,6 +136,7 @@ func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd
 		WithDecryption: flag.decryption,
 	})
 	if err != nil {
+		indicatorSpinner.Stop()
 		dialog.Log("Error", err.Error(), cmd)
 		os.Exit(1)
 		return
@@ -225,6 +226,7 @@ func getParameters(flag flagsGet, profile string, region string, cmd *cobra.Comm
 		WithDecryption: flag.decryption,
 	})
 	if err != nil {
+		indicatorSpinner.Stop()
 		dialog.Log("Error", err.Error(), cmd)
 		os.Exit(1)
 		return
