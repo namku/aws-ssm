@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -111,7 +111,7 @@ According to the search it can take a long time.`,
 				flagsPath.path = "/"
 			}
 			startSpinner()
-			getParametersByPath(flagsPath, profile, region, cmd)
+			getParametersByPath(flagsPath, profile, region, nil, cmd)
 			indicatorSpinner.Stop()
 		}
 
@@ -127,12 +127,13 @@ According to the search it can take a long time.`,
 }
 
 // getParamtersByPath retrive values from path without param.
-func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd *cobra.Command) {
+func getParametersByPath(flag flagsGetByPath, profile string, region string, nextToken *string, cmd *cobra.Command) {
 	ssmClient := pkg.NewSSM(profile, region)
 
 	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 		Path:           &flag.path,
 		Recursive:      true,
+		NextToken:      nextToken,
 		WithDecryption: flag.decryption,
 	})
 	if err != nil {
@@ -147,73 +148,11 @@ func getParametersByPath(flag flagsGetByPath, profile string, region string, cmd
 	}
 
 	if results.NextToken != nil {
-		getParametersByPathNextToken(flag, profile, region, results, cmd)
+		getParametersByPath(flag, profile, region, results.NextToken, cmd)
 	} else if flag.json != "" {
 		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
 		writeJson(ssmP, flag.showPath, flag.json)
 	}
-}
-
-// getParamtersByPathNexToken retrive values from path without param from the token.
-func getParametersByPathNextToken(flag flagsGetByPath, profile string, region string, results *ssm.GetParametersByPathOutput, cmd *cobra.Command) {
-	ssmClient := pkg.NewSSM(profile, region)
-
-	nextToken := *results.NextToken
-
-	results, err := ssmClient.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
-		Path:           &flag.path,
-		Recursive:      true,
-		NextToken:      &nextToken,
-		WithDecryption: flag.decryption,
-	})
-	if err != nil {
-		dialog.Log("Error", err.Error(), cmd)
-		os.Exit(1)
-		return
-	}
-
-	for _, output := range results.Parameters {
-		parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath, "")
-	}
-
-	if results.NextToken != nil {
-		nextPage(flag, profile, region, results)
-	} else if flag.json != "" {
-		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.showPath, flag.json)
-	}
-
-}
-
-// nextPage paginator options for GetParametersByPath
-func nextPage(flag flagsGetByPath, profile string, region string, results *ssm.GetParametersByPathOutput) {
-	ssmClient := pkg.NewSSM(profile, region)
-
-	nextToken := *results.NextToken
-
-	paginator := ssm.NewGetParametersByPathPaginator(ssmClient, &ssm.GetParametersByPathInput{
-		Path:           &flag.path,
-		Recursive:      true,
-		NextToken:      &nextToken,
-		WithDecryption: flag.decryption,
-	})
-
-	for paginator.HasMorePages() {
-		results, err := paginator.NextPage(context.TODO())
-		if err != nil {
-			log.Fatalf("failed to get page , %v", err)
-		}
-
-		for _, output := range results.Parameters {
-			parametersOutput(flag.value, flag.variable, output, flag.contains, flag.showPath, "")
-		}
-	}
-
-	if flag.json != "" {
-		ssmP := ssmParam{SSMParamSlice, SSMValueSlice, SSMTypeSlice}
-		writeJson(ssmP, flag.showPath, flag.json)
-	}
-
 }
 
 // getParameters retrives values from path with param.
